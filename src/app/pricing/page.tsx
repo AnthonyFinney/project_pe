@@ -1,33 +1,14 @@
-import CategoryCard from "@/components/CategoryCard";
-import Footer from "@/components/Footer";
-import Hero from "@/components/Hero";
 import Navbar from "@/components/Navbar";
 import PricingCard from "@/components/PricingCard";
-import { categories, pricingPlans } from "@/constants";
+import Footer from "@/components/Footer";
+import { pricingPlans } from "@/constants";
 
-export default function Home() {
+export default function PricingPage() {
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen bg-white">
       <Navbar />
-      <Hero />
-      <div className="container mx-auto px-4 py-8 mt-16">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Browse Categories
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Discover AI prompts organized by category to help you get the most
-            out of your AI tools
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {categories.map((category) => (
-            <CategoryCard key={category.id} category={category} />
-          ))}
-        </div>
-
-        <div className="text-center my-16">
+      <main className="container mx-auto px-4 py-8 mt-16">
+        <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Simple, Transparent Pricing
           </h1>
@@ -79,7 +60,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
       <Footer />
     </div>
   );
