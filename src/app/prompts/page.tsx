@@ -337,7 +337,7 @@ export default function PromptsPage() {
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">
               Premium Prompts
             </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 space-y-2">
               {lockedPrompts.map((prompt) => (
                 <PromptCard key={prompt.id} prompt={prompt} isLocked={true} />
               ))}

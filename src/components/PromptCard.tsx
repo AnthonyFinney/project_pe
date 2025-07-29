@@ -1,44 +1,62 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { ExternalLink, ImageIcon, Crown } from "lucide-react"
-import Link from "next/link"
+import { Button } from "@/components/ui/button";
+import { ExternalLink, ImageIcon, Crown } from "lucide-react";
+import Link from "next/link";
 
 interface PromptCardProps {
   prompt: {
-    id: string
-    title: string
-    content: string
-    category: string
-    categoryName?: string
-    isLocked?: boolean
-    thumbnail?: string | null
-    description?: string
-    useCases?: string[]
-  }
-  isLocked?: boolean
+    id: string;
+    title: string;
+    content: string;
+    category: string;
+    categoryName?: string;
+    isLocked?: boolean;
+    thumbnail?: string | null;
+    description?: string;
+    useCases?: string[];
+  };
+  isLocked?: boolean;
 }
 
-export default function PromptCard({ prompt, isLocked = false }: PromptCardProps) {
+export default function PromptCard({
+  prompt,
+  isLocked = false,
+}: PromptCardProps) {
   // Extract the first sentence or up to 150 characters for the description if not provided
-  const promptDescription = prompt.description || prompt.content.split(".")[0].substring(0, 150) + "..."
+  const promptDescription =
+    prompt.description ||
+    prompt.content.split(".")[0].substring(0, 150) + "...";
 
   // Default use cases if none provided
-  const useCases = prompt.useCases || ["Content creation", "Brainstorming ideas", "Professional communication"]
+  const useCases = prompt.useCases || [
+    "Content creation",
+    "Brainstorming ideas",
+    "Professional communication",
+  ];
 
   return (
     <div
-      className={`bg-white border border-gray-200 rounded-lg p-6 relative hover:shadow-lg hover:border-blue-300 transition-all duration-200 group ${isLocked ? "opacity-75" : ""}`}
+      className={`bg-white border border-gray-200 rounded-lg p-6 relative hover:shadow-lg hover:border-blue-300 transition-all duration-200 group ${
+        isLocked ? "opacity-75" : ""
+      }`}
     >
       {isLocked && (
         <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg flex items-center justify-center z-10">
           <div className="text-center p-6">
             <Crown className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{prompt.title}</h3>
-            <p className="text-sm text-gray-600 font-medium mb-4">Premium Content</p>
-            <Link href="/pricing">
-              <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700">
-                Upgrade to Pro
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {prompt.title}
+            </h3>
+            <p className="text-sm text-gray-600 font-medium mb-4">
+              Premium Content
+            </p>
+            <Link href="/pricing" passHref>
+              <Button
+                asChild
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              >
+                <a>Upgrade to Pro</a>
               </Button>
             </Link>
           </div>
@@ -78,26 +96,39 @@ export default function PromptCard({ prompt, isLocked = false }: PromptCardProps
 
       {!isLocked && (
         <>
-          <p className="text-gray-600 text-sm mb-4 leading-relaxed">{promptDescription}</p>
+          <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+            {promptDescription}
+          </p>
 
           <div className="mb-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">Best used for:</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-2">
+              Best used for:
+            </h4>
             <div className="flex flex-wrap gap-2">
               {useCases.map((useCase, index) => (
-                <span key={index} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
+                <span
+                  key={index}
+                  className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full"
+                >
                   {useCase}
                 </span>
               ))}
             </div>
           </div>
 
-          <Link href={`/prompt/${prompt.id}?from=${prompt.category}`} className="w-full">
-            <Button variant="default" className="w-full bg-blue-600 hover:bg-blue-700">
+          <Link
+            href={`/prompt/${prompt.id}?from=${prompt.category}`}
+            className="w-full"
+          >
+            <Button
+              variant="default"
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
               View Details
             </Button>
           </Link>
         </>
       )}
     </div>
-  )
+  );
 }
