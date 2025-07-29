@@ -1,55 +1,53 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Edit3, Check, X } from "lucide-react"
-
-interface Variable {
-  name: string
-  type: "text" | "textarea" | "select" | "dropdown" | "number" | "url"
-  label?: string
-  placeholder?: string
-  options?: string[]
-  required?: boolean
-  description?: string
-}
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Edit3, Check, X } from "lucide-react";
+import { Variable } from "@/types";
 
 interface VariableInputProps {
-  variable: Variable
-  value: string
-  onChange: (value: string) => void
+  variable: Variable;
+  value: string;
+  onChange: (value: string) => void;
 }
 
-export default function VariableInput({ variable, value, onChange }: VariableInputProps) {
-  const [isCustomMode, setIsCustomMode] = useState(false)
-  const [customValue, setCustomValue] = useState("")
+export default function VariableInput({
+  variable,
+  value,
+  onChange,
+}: VariableInputProps) {
+  const [isCustomMode, setIsCustomMode] = useState(false);
+  const [customValue, setCustomValue] = useState("");
 
   const handleCustomToggle = () => {
     if (isCustomMode) {
       // Switching back to preset options
-      setIsCustomMode(false)
-      setCustomValue("")
-      onChange("")
+      setIsCustomMode(false);
+      setCustomValue("");
+      onChange("");
     } else {
       // Switching to custom input
-      setIsCustomMode(true)
-      setCustomValue(value)
+      setIsCustomMode(true);
+      setCustomValue(value);
     }
-  }
+  };
 
   const handleCustomSave = () => {
-    onChange(customValue)
-    setIsCustomMode(false)
-  }
+    onChange(customValue);
+    setIsCustomMode(false);
+  };
 
   const handleCustomCancel = () => {
-    setCustomValue("")
-    setIsCustomMode(false)
-  }
+    setCustomValue("");
+    setIsCustomMode(false);
+  };
 
   const renderInput = () => {
     // If in custom mode for select/dropdown, show text input
-    if (isCustomMode && (variable.type === "select" || variable.type === "dropdown")) {
+    if (
+      isCustomMode &&
+      (variable.type === "select" || variable.type === "dropdown")
+    ) {
       return (
         <div className="space-y-2">
           <div className="flex space-x-2">
@@ -58,18 +56,34 @@ export default function VariableInput({ variable, value, onChange }: VariableInp
               value={customValue}
               onChange={(e) => setCustomValue(e.target.value)}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              placeholder={variable.placeholder || `Enter custom ${variable.label?.toLowerCase()}`}
+              placeholder={
+                variable.placeholder ||
+                `Enter custom ${variable.label?.toLowerCase()}`
+              }
             />
-            <Button type="button" size="sm" onClick={handleCustomSave} className="bg-green-600 hover:bg-green-700">
+            <Button
+              type="button"
+              size="sm"
+              onClick={handleCustomSave}
+              className="bg-green-600 hover:bg-green-700"
+            >
               <Check className="w-4 h-4" />
             </Button>
-            <Button type="button" size="sm" variant="outline" onClick={handleCustomCancel} className="bg-transparent">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={handleCustomCancel}
+              className="bg-transparent"
+            >
               <X className="w-4 h-4" />
             </Button>
           </div>
-          <p className="text-xs text-gray-500">Enter your custom value and click the check mark to save</p>
+          <p className="text-xs text-gray-500">
+            Enter your custom value and click the check mark to save
+          </p>
         </div>
-      )
+      );
     }
 
     switch (variable.type) {
@@ -79,11 +93,13 @@ export default function VariableInput({ variable, value, onChange }: VariableInp
             value={value}
             onChange={(e) => onChange(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
-            placeholder={variable.placeholder || `Enter ${variable.label?.toLowerCase()}`}
+            placeholder={
+              variable.placeholder || `Enter ${variable.label?.toLowerCase()}`
+            }
             rows={3}
             required={variable.required}
           />
-        )
+        );
 
       case "select":
         return (
@@ -114,7 +130,7 @@ export default function VariableInput({ variable, value, onChange }: VariableInp
               </Button>
             )}
           </div>
-        )
+        );
 
       case "dropdown":
         return (
@@ -145,7 +161,7 @@ export default function VariableInput({ variable, value, onChange }: VariableInp
               </Button>
             )}
           </div>
-        )
+        );
 
       case "number":
         return (
@@ -154,10 +170,12 @@ export default function VariableInput({ variable, value, onChange }: VariableInp
             value={value}
             onChange={(e) => onChange(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            placeholder={variable.placeholder || `Enter ${variable.label?.toLowerCase()}`}
+            placeholder={
+              variable.placeholder || `Enter ${variable.label?.toLowerCase()}`
+            }
             required={variable.required}
           />
-        )
+        );
 
       case "url":
         return (
@@ -169,7 +187,7 @@ export default function VariableInput({ variable, value, onChange }: VariableInp
             placeholder={variable.placeholder || "https://example.com"}
             required={variable.required}
           />
-        )
+        );
 
       default: // text
         return (
@@ -178,12 +196,14 @@ export default function VariableInput({ variable, value, onChange }: VariableInp
             value={value}
             onChange={(e) => onChange(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            placeholder={variable.placeholder || `Enter ${variable.label?.toLowerCase()}`}
+            placeholder={
+              variable.placeholder || `Enter ${variable.label?.toLowerCase()}`
+            }
             required={variable.required}
           />
-        )
+        );
     }
-  }
+  };
 
   return (
     <div>
@@ -196,7 +216,9 @@ export default function VariableInput({ variable, value, onChange }: VariableInp
         {variable.required && <span className="text-red-500 ml-1">*</span>}
       </label>
       {renderInput()}
-      {variable.description && <p className="text-xs text-gray-500 mt-1">{variable.description}</p>}
+      {variable.description && (
+        <p className="text-xs text-gray-500 mt-1">{variable.description}</p>
+      )}
     </div>
-  )
+  );
 }

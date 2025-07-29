@@ -8,6 +8,7 @@ import {
   Zap,
   Globe,
 } from "lucide-react";
+import { PromptType } from "@/types";
 
 export const categories = [
   {
@@ -105,257 +106,267 @@ export const pricingPlans = [
   },
 ];
 
-export const prompts = [
+export const prompts: PromptType[] = [
   {
     id: "1",
     title: "Creative Blog Post Writer",
     content:
-      "Write a compelling blog post about [TOPIC] that engages readers and provides valuable insights. The tone should be [TONE] and target [AUDIENCE]. Include an attention-grabbing headline, introduction, main points, and conclusion. Make sure to include actionable tips and real-world examples related to [TOPIC]. The post should be approximately [WORD_COUNT] words long.",
+      "Write a compelling blog post about [TOPIC] that engages readers and provides valuable insights. Include an attention-grabbing headline, introduction, main points, and conclusion.",
     category: "writing",
     categoryName: "Writing",
     isLocked: false,
+    thumbnail: null,
+    description:
+      "Generate engaging blog posts with structured content that captivates readers and delivers value.",
+    useCases: ["Blog content", "Article writing", "Content marketing"],
     variables: [
       {
         name: "TOPIC",
-        type: "text" as const,
+        type: "text",
         label: "Blog Topic",
-        placeholder: "e.g., AI in Healthcare, Remote Work Tips",
+        placeholder: "Artificial Intelligence Trends",
         required: true,
-        description: "The main subject of your blog post",
-      },
-      {
-        name: "TONE",
-        type: "select" as const,
-        label: "Writing Tone",
-        options: [
-          "Professional",
-          "Casual",
-          "Friendly",
-          "Authoritative",
-          "Conversational",
-        ],
-        required: true,
-        description: "The tone and style of your writing",
-      },
-      {
-        name: "AUDIENCE",
-        type: "dropdown" as const,
-        label: "Target Audience",
-        options: [
-          "Beginners",
-          "Professionals",
-          "Students",
-          "General Public",
-          "Experts",
-        ],
-        required: true,
-        description: "Who is your primary audience?",
-      },
-      {
-        name: "WORD_COUNT",
-        type: "number" as const,
-        label: "Word Count",
-        placeholder: "1000",
-        required: false,
-        description: "Approximate length of the blog post",
+        description: "The subject of your blog post.",
       },
     ],
-    thumbnail: null,
-    type: "text",
+    exampleValues: {
+      TOPIC: "The Future of Artificial Intelligence",
+    },
   },
   {
     id: "2",
     title: "Product Description Generator",
     content:
-      "Create a persuasive product description for [PRODUCT] that highlights key features, benefits, and appeals to the target audience. The product is priced at [PRICE] and is perfect for [TARGET_AUDIENCE]. Focus on [SELLING_POINTS] and maintain a [TONE] tone throughout. Include a compelling call-to-action that encourages immediate purchase.",
+      "Create a persuasive product description for [PRODUCT] that highlights key features, benefits, and appeals to the target audience. Focus on emotional triggers and clear value propositions.",
     category: "ecommerce",
     categoryName: "E-commerce",
     isLocked: false,
+    thumbnail: null,
+    description:
+      "Craft compelling product descriptions that highlight benefits and drive conversions.",
+    useCases: ["Product listings", "E-commerce sites", "Marketing materials"],
     variables: [
       {
         name: "PRODUCT",
-        type: "text" as const,
+        type: "text",
         label: "Product Name",
-        placeholder: "e.g., Wireless Bluetooth Headphones",
+        placeholder: "Eco-Friendly Water Bottle",
         required: true,
-      },
-      {
-        name: "PRICE",
-        type: "text" as const,
-        label: "Product Price",
-        placeholder: "e.g., $99.99, €79.99",
-        required: true,
-      },
-      {
-        name: "TARGET_AUDIENCE",
-        type: "select" as const,
-        label: "Target Audience",
-        options: [
-          "Tech Enthusiasts",
-          "Fitness Lovers",
-          "Professionals",
-          "Students",
-          "Parents",
-          "Seniors",
-        ],
-        required: true,
-      },
-      {
-        name: "SELLING_POINTS",
-        type: "textarea" as const,
-        label: "Key Selling Points",
-        placeholder:
-          "List the main features and benefits that make this product special",
-        required: true,
-        description: "Highlight what makes your product unique",
-      },
-      {
-        name: "TONE",
-        type: "dropdown" as const,
-        label: "Marketing Tone",
-        options: [
-          "Exciting",
-          "Professional",
-          "Trustworthy",
-          "Luxurious",
-          "Budget-friendly",
-        ],
-        required: true,
+        description: "Name or type of the product.",
       },
     ],
+    exampleValues: {
+      PRODUCT: "Smart Stainless Steel Water Bottle",
+    },
+  },
+  {
+    id: "3",
+    title: "Social Media Caption Creator",
+    content:
+      "Generate engaging social media captions for [PLATFORM] about [TOPIC]. Include relevant hashtags, call-to-action, and maintain brand voice consistency.",
+    category: "social-media",
+    categoryName: "Social Media",
+    isLocked: false,
     thumbnail: null,
-    type: "text",
+    description:
+      "Create platform-specific captions that engage followers and drive interaction.",
+    useCases: ["Instagram posts", "Twitter content", "LinkedIn updates"],
+    variables: [
+      {
+        name: "PLATFORM",
+        type: "select",
+        label: "Social Platform",
+        options: ["Instagram", "Twitter", "LinkedIn", "Facebook"],
+        required: true,
+        description: "Select the target social platform.",
+      },
+      {
+        name: "TOPIC",
+        type: "text",
+        label: "Caption Topic",
+        placeholder: "Morning Productivity Tips",
+        required: true,
+        description: "The main theme of your caption.",
+      },
+    ],
+    exampleValues: {
+      PLATFORM: "Instagram",
+      TOPIC: "Monday Motivation",
+    },
+  },
+  {
+    id: "4",
+    title: "Code Review Assistant",
+    content:
+      "Review the following code and provide constructive feedback on performance, readability, and best practices: [CODE]. Suggest improvements and explain reasoning.",
+    category: "coding",
+    categoryName: "Coding",
+    isLocked: false,
+    thumbnail: null,
+    description:
+      "Get expert code reviews with actionable feedback to improve your programming.",
+    useCases: [
+      "Code improvement",
+      "Learning programming",
+      "Technical documentation",
+    ],
+    variables: [
+      {
+        name: "CODE",
+        type: "textarea",
+        label: "Code to Review",
+        placeholder: "// Paste your code here",
+        required: true,
+        description: "Insert the code you want reviewed.",
+      },
+    ],
+    exampleValues: {
+      CODE: "function add(a, b) { return a + b; }",
+    },
+  },
+  {
+    id: "5",
+    title: "Email Marketing Template",
+    content:
+      "Create a professional email marketing campaign for [PRODUCT/SERVICE] that includes subject line, personalized greeting, value proposition, and clear CTA.",
+    category: "business",
+    categoryName: "Business",
+    isLocked: false,
+    thumbnail: null,
+    description:
+      "Design effective email campaigns that engage subscribers and drive conversions.",
+    useCases: ["Newsletter creation", "Sales emails", "Customer outreach"],
+    variables: [
+      {
+        name: "PRODUCT/SERVICE",
+        type: "text",
+        label: "Product or Service",
+        placeholder: "Online Language Course",
+        required: true,
+        description: "The main product or service being promoted.",
+      },
+    ],
+    exampleValues: {
+      "PRODUCT/SERVICE": "Premium Yoga Mat",
+    },
+  },
+  {
+    id: "6",
+    title: "Advanced SEO Content Strategy",
+    content:
+      "Develop a comprehensive SEO content strategy for [KEYWORD] including content pillars, topic clusters, and optimization techniques...",
+    category: "writing",
+    categoryName: "Writing",
+    isLocked: true,
+    thumbnail: null,
+    description:
+      "Build a complete SEO content strategy to improve rankings and organic traffic.",
+    variables: [
+      {
+        name: "KEYWORD",
+        type: "text",
+        label: "Main Keyword",
+        placeholder: "Organic Skin Care",
+        required: true,
+        description: "Focus keyword for your SEO strategy.",
+      },
+    ],
+    exampleValues: {
+      KEYWORD: "Sustainable Living",
+    },
   },
   {
     id: "7",
     title: "Fantasy Landscape Generator",
     content:
-      "Create a breathtaking [STYLE] fantasy landscape featuring [MAIN_SUBJECT] with [LIGHTING] lighting and [ATMOSPHERE] atmosphere. The scene should include [ELEMENTS] and be rendered in [QUALITY] quality with [COLOR_PALETTE] color palette. Add [MAGICAL_EFFECTS] to enhance the mystical feeling. Camera angle: [CAMERA_ANGLE], composition: [COMPOSITION]. Reference URL for inspiration: [REFERENCE_URL].",
+      "Create a breathtaking fantasy landscape featuring floating islands with ethereal lighting and mystical atmosphere...",
     category: "image",
     categoryName: "Image Generation",
     isLocked: false,
+    thumbnail: "/placeholder.jpg",
+    description:
+      "Generate stunning fantasy landscapes for creative projects and visual inspiration.",
+    useCases: ["Game design", "Book covers", "Creative inspiration"],
     variables: [
       {
         name: "STYLE",
-        type: "select" as const,
+        type: "select",
         label: "Art Style",
-        options: [
-          "Digital Art",
-          "Oil Painting",
-          "Watercolor",
-          "Concept Art",
-          "Photorealistic",
-        ],
+        options: ["Digital Art", "Watercolor", "Oil Painting"],
         required: true,
+        description: "Choose your preferred art style.",
       },
       {
         name: "MAIN_SUBJECT",
-        type: "text" as const,
+        type: "text",
         label: "Main Subject",
-        placeholder: "e.g., floating islands, ancient castle, mystical forest",
+        placeholder: "floating islands",
         required: true,
       },
       {
         name: "LIGHTING",
-        type: "dropdown" as const,
-        label: "Lighting Style",
-        options: [
-          "Golden Hour",
-          "Ethereal",
-          "Dramatic",
-          "Soft",
-          "Moonlight",
-          "Magical Glow",
-        ],
-        required: true,
+        type: "text",
+        label: "Lighting",
+        placeholder: "Golden Hour",
+        required: false,
       },
       {
         name: "ATMOSPHERE",
-        type: "select" as const,
+        type: "text",
         label: "Atmosphere",
-        options: [
-          "Mystical",
-          "Serene",
-          "Epic",
-          "Mysterious",
-          "Peaceful",
-          "Dramatic",
-        ],
-        required: true,
+        placeholder: "Mystical",
+        required: false,
       },
       {
         name: "ELEMENTS",
-        type: "textarea" as const,
-        label: "Scene Elements",
-        placeholder:
-          "Describe additional elements like waterfalls, ruins, creatures, etc.",
+        type: "textarea",
+        label: "Extra Elements",
+        placeholder: "cascading waterfalls, glowing crystals",
         required: false,
-        description: "Additional details to include in the scene",
       },
       {
         name: "QUALITY",
-        type: "select" as const,
-        label: "Image Quality",
-        options: [
-          "4K",
-          "8K Ultra-detailed",
-          "High Resolution",
-          "Cinematic Quality",
-        ],
-        required: true,
+        type: "select",
+        label: "Quality",
+        options: ["4K", "8K Ultra-detailed", "HD"],
+        required: false,
       },
       {
         name: "COLOR_PALETTE",
-        type: "text" as const,
+        type: "text",
         label: "Color Palette",
-        placeholder: "e.g., warm purples and blues, earth tones",
+        placeholder: "warm purples, blues, and gold",
         required: false,
       },
       {
         name: "MAGICAL_EFFECTS",
-        type: "text" as const,
+        type: "textarea",
         label: "Magical Effects",
-        placeholder:
-          "e.g., floating particles, energy streams, glowing elements",
+        placeholder: "floating particles of light, aurora-like energy",
         required: false,
       },
       {
         name: "CAMERA_ANGLE",
-        type: "dropdown" as const,
+        type: "text",
         label: "Camera Angle",
-        options: [
-          "Wide Shot",
-          "Close-up",
-          "Bird's Eye View",
-          "Low Angle",
-          "High Angle",
-        ],
-        required: true,
+        placeholder: "Wide Shot",
+        required: false,
       },
       {
         name: "COMPOSITION",
-        type: "select" as const,
-        label: "Composition Style",
-        options: [
-          "Rule of Thirds",
-          "Centered",
-          "Leading Lines",
-          "Symmetrical",
-          "Dynamic",
-        ],
-        required: true,
+        type: "text",
+        label: "Composition",
+        placeholder: "Rule of Thirds",
+        required: false,
       },
       {
         name: "REFERENCE_URL",
-        type: "url" as const,
+        type: "url",
         label: "Reference Image URL",
-        placeholder: "https://example.com/reference-image.jpg",
+        placeholder: "https://example.com/your-image.jpg",
         required: false,
-        description: "Optional reference image for inspiration",
       },
     ],
-    thumbnail: "/placeholder.jpg",
-    type: "image",
     exampleValues: {
       STYLE: "Digital Art",
       MAIN_SUBJECT: "floating islands connected by magical bridges",
@@ -369,6 +380,121 @@ export const prompts = [
       CAMERA_ANGLE: "Wide Shot",
       COMPOSITION: "Rule of Thirds",
       REFERENCE_URL: "",
+    },
+  },
+  {
+    id: "8",
+    title: "Portrait Photography Prompt",
+    content:
+      "Generate a stunning portrait with professional lighting setup and cinematic mood...",
+    category: "image",
+    categoryName: "Image Generation",
+    isLocked: true,
+    thumbnail: "/placeholder.svg?height=200&width=300",
+    description:
+      "Create professional-quality portrait images with cinematic lighting and mood.",
+    variables: [],
+    exampleValues: {},
+  },
+  {
+    id: "9",
+    title: "Business Plan Generator",
+    content:
+      "Create a comprehensive business plan for [BUSINESS TYPE] including executive summary, market analysis, financial projections, and growth strategy...",
+    category: "business",
+    categoryName: "Business",
+    isLocked: true,
+    thumbnail: null,
+    description:
+      "Generate complete business plans ready for investors and strategic planning.",
+    variables: [
+      {
+        name: "BUSINESS TYPE",
+        type: "text",
+        label: "Business Type",
+        placeholder: "Online Retail Startup",
+        required: true,
+      },
+    ],
+    exampleValues: {
+      "BUSINESS TYPE": "EdTech Platform",
+    },
+  },
+  {
+    id: "10",
+    title: "Lifestyle Blog Content",
+    content:
+      "Write engaging lifestyle content about [TOPIC] that resonates with your audience and provides practical tips and inspiration...",
+    category: "lifestyle",
+    categoryName: "Lifestyle",
+    isLocked: true,
+    thumbnail: null,
+    description:
+      "Create engaging lifestyle content that connects with readers and provides value.",
+    variables: [
+      {
+        name: "TOPIC",
+        type: "text",
+        label: "Topic",
+        placeholder: "Healthy Morning Routines",
+        required: true,
+      },
+    ],
+    exampleValues: {
+      TOPIC: "Minimalist Living",
+    },
+  },
+  {
+    id: "11",
+    title: "Productivity System Setup",
+    content:
+      "Design a personalized productivity system for [PROFESSION/ROLE] that includes task management, goal setting, and time blocking strategies...",
+    category: "productivity",
+    categoryName: "Productivity",
+    isLocked: false,
+    thumbnail: null,
+    description:
+      "Build custom productivity systems tailored to specific roles and work styles.",
+    useCases: [
+      "Personal organization",
+      "Team productivity",
+      "Work-life balance",
+    ],
+    variables: [
+      {
+        name: "PROFESSION/ROLE",
+        type: "text",
+        label: "Profession or Role",
+        placeholder: "Freelance Designer",
+        required: true,
+      },
+    ],
+    exampleValues: {
+      "PROFESSION/ROLE": "Project Manager",
+    },
+  },
+  {
+    id: "12",
+    title: "E-commerce Product Launch",
+    content:
+      "Plan and execute a successful product launch for [PRODUCT] including pre-launch marketing, launch day activities, and post-launch follow-up...",
+    category: "ecommerce",
+    categoryName: "E-commerce",
+    isLocked: true,
+    thumbnail: null,
+    description:
+      "Create comprehensive product launch strategies for maximum market impact.",
+    variables: [
+      {
+        name: "PRODUCT",
+        type: "text",
+        label: "Product",
+        placeholder: "Wireless Earbuds",
+        required: true,
+      },
+    ],
+    exampleValues: {
+      PRODUCT: "Bamboo Fiber T-Shirt",
     },
   },
 ];

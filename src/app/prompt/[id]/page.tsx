@@ -6,26 +6,14 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import VariableInput from "@/components/VariableInput";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Copy, Edit, Save, ImageIcon, Sparkles } from "lucide-react";
+import { Copy, Edit, Save, ImageIcon, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { prompts } from "@/constants";
 import Image from "next/image";
 
-// interface Variable {
-//   name: string;
-//   type: "text" | "textarea" | "select" | "dropdown" | "number" | "url";
-//   label?: string;
-//   placeholder?: string;
-//   options?: string[];
-//   required?: boolean;
-//   description?: string;
-// }
-
 export default function PromptDetailPage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const promptId = params.id as string;
-  const fromCategory = searchParams.get("from");
 
   const [prompt, setPrompt] = useState<(typeof prompts)[0] | null>(null);
   const [variables, setVariables] = useState<Record<string, string>>({});
@@ -145,19 +133,6 @@ export default function PromptDetailPage() {
     <div className="min-h-screen bg-white">
       <Navbar />
       <main className="container mx-auto px-4 py-8 mt-16">
-        {/* Back Link */}
-        <div className="mb-6">
-          <Link
-            href={
-              fromCategory ? `/prompts?category=${fromCategory}` : "/prompts"
-            }
-            className="inline-flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to {prompt?.categoryName || "Prompts"}</span>
-          </Link>
-        </div>
-
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="mb-8">

@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Menu, X, Zap } from "lucide-react"
+import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Menu, X, Zap } from "lucide-react";
 
 export default function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <nav className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
@@ -20,13 +20,22 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="/categories" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+            <Link
+              href="/categories"
+              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+            >
               Categories
             </Link>
-            <Link href="/prompts" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+            <Link
+              href="/prompts"
+              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+            >
               Prompts
             </Link>
-            <Link href="/pricing" className="text-gray-700 hover:text-blue-600 transition-colors font-medium">
+            <Link
+              href="/pricing"
+              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+            >
               Pricing
             </Link>
             <Button variant="outline" size="sm">
@@ -35,8 +44,16 @@ export default function Navbar() {
           </div>
 
           {/* Mobile Menu Button */}
-          <button className="md:hidden p-2" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Toggle menu">
-            {isMenuOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
+          <button
+            className="md:hidden p-2"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {isMenuOpen ? (
+              <X className="w-6 h-6 text-gray-700" />
+            ) : (
+              <Menu className="w-6 h-6 text-gray-700" />
+            )}
           </button>
         </div>
 
@@ -65,7 +82,11 @@ export default function Navbar() {
               >
                 Pricing
               </Link>
-              <Button variant="outline" size="sm" className="w-fit bg-transparent">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-fit bg-transparent"
+              >
                 My Account
               </Button>
             </div>
@@ -73,5 +94,5 @@ export default function Navbar() {
         )}
       </div>
     </nav>
-  )
+  );
 }

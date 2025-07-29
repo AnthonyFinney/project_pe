@@ -1,45 +1,48 @@
-"use client"
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Crown } from "lucide-react"
-import Link from "next/link"
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Crown } from "lucide-react";
+import Link from "next/link";
 
 interface SubscriptionStatusProps {
-  userId?: string
+  userId?: string;
 }
 
-export default function SubscriptionStatus({ userId }: SubscriptionStatusProps) {
-  const [subscription, setSubscription] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export default function SubscriptionStatus({
+  userId,
+}: SubscriptionStatusProps) {
+  const [subscription, setSubscription] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Fetch user's subscription status
     const fetchSubscription = async () => {
       try {
-        const response = await fetch(`/api/user/subscription?userId=${userId}`)
-        const data = await response.json()
-        setSubscription(data)
+        const response = await fetch(`/api/user/subscription?userId=${userId}`);
+        const data = await response.json();
+        setSubscription(data);
       } catch (error) {
-        console.error("Error fetching subscription:", error)
+        console.error("Error fetching subscription:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
     if (userId) {
-      fetchSubscription()
+      fetchSubscription();
     } else {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [userId])
+  }, [userId]);
 
   if (isLoading) {
     return (
       <div className="animate-pulse">
         <div className="h-4 bg-gray-200 rounded w-24"></div>
       </div>
-    )
+    );
   }
 
   if (!subscription || subscription.status !== "active") {
@@ -50,7 +53,7 @@ export default function SubscriptionStatus({ userId }: SubscriptionStatusProps) 
           Upgrade to Pro
         </Button>
       </Link>
-    )
+    );
   }
 
   return (
@@ -65,5 +68,5 @@ export default function SubscriptionStatus({ userId }: SubscriptionStatusProps) 
         </Button>
       </Link>
     </div>
-  )
+  );
 }

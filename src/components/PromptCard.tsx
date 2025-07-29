@@ -57,7 +57,7 @@ export default function PromptCard({
                 asChild
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
               >
-                <a>Upgrade to Pro</a>
+                Upgrade to Pro
               </Button>
             </Link>
           </div>

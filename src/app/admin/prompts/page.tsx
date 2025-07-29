@@ -1,10 +1,19 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import AdminLayout from "@/components/admin/AdminLayout"
-import { Button } from "@/components/ui/button"
-import { Plus, Search, Filter, Edit, Trash2, Eye, Lock, Unlock } from "lucide-react"
-import Link from "next/link"
+import { useState } from "react";
+import AdminLayout from "@/components/admin/AdminLayout";
+import { Button } from "@/components/ui/button";
+import {
+  Plus,
+  Search,
+  Filter,
+  Edit,
+  Trash2,
+  Eye,
+  Lock,
+  Unlock,
+} from "lucide-react";
+import Link from "next/link";
 
 const mockPrompts = [
   {
@@ -43,39 +52,45 @@ const mockPrompts = [
     createdAt: "2024-01-22",
     updatedAt: "2024-01-22",
   },
-]
+];
 
 export default function AdminPrompts() {
-  const [prompts, setPrompts] = useState(mockPrompts)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
-  const [selectedStatus, setSelectedStatus] = useState("all")
+  const [prompts, setPrompts] = useState(mockPrompts);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState("all");
 
   const filteredPrompts = prompts.filter((prompt) => {
-    const matchesSearch = prompt.title.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || prompt.category === selectedCategory
-    const matchesStatus = selectedStatus === "all" || prompt.status === selectedStatus
-    return matchesSearch && matchesCategory && matchesStatus
-  })
+    const matchesSearch = prompt.title
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      selectedCategory === "all" || prompt.category === selectedCategory;
+    const matchesStatus =
+      selectedStatus === "all" || prompt.status === selectedStatus;
+    return matchesSearch && matchesCategory && matchesStatus;
+  });
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this prompt?")) {
-      setPrompts(prompts.filter((p) => p.id !== id))
+      setPrompts(prompts.filter((p) => p.id !== id));
     }
-  }
+  };
 
   const toggleLock = (id: string) => {
-    setPrompts(prompts.map((p) => (p.id === id ? { ...p, isLocked: !p.isLocked } : p)))
-  }
+    setPrompts(
+      prompts.map((p) => (p.id === id ? { ...p, isLocked: !p.isLocked } : p))
+    );
+  };
 
   const getStatusBadge = (status: string) => {
     const styles = {
       published: "bg-green-100 text-green-800",
       draft: "bg-yellow-100 text-yellow-800",
       archived: "bg-gray-100 text-gray-800",
-    }
-    return styles[status as keyof typeof styles] || styles.draft
-  }
+    };
+    return styles[status as keyof typeof styles] || styles.draft;
+  };
 
   return (
     <AdminLayout>
@@ -141,11 +156,21 @@ export default function AdminPrompts() {
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900">Title</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900">Category</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900">Status</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900">Updated</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-900">Actions</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-900">
+                    Title
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-900">
+                    Category
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-900">
+                    Status
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-900">
+                    Updated
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-900">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -153,24 +178,44 @@ export default function AdminPrompts() {
                   <tr key={prompt.id} className="hover:bg-gray-50">
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-2">
-                        <span className="font-medium text-gray-900">{prompt.title}</span>
-                        {prompt.isLocked && <Lock className="w-4 h-4 text-yellow-600" />}
+                        <span className="font-medium text-gray-900">
+                          {prompt.title}
+                        </span>
+                        {prompt.isLocked && (
+                          <Lock className="w-4 h-4 text-yellow-600" />
+                        )}
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-gray-600">{prompt.category}</td>
+                    <td className="py-3 px-4 text-gray-600">
+                      {prompt.category}
+                    </td>
                     <td className="py-3 px-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(prompt.status)}`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(
+                          prompt.status
+                        )}`}
+                      >
                         {prompt.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-gray-600">{prompt.updatedAt}</td>
+                    <td className="py-3 px-4 text-gray-600">
+                      {prompt.updatedAt}
+                    </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm" className="bg-transparent">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="bg-transparent"
+                        >
                           <Eye className="w-4 h-4" />
                         </Button>
                         <Link href={`/admin/prompts/${prompt.id}/edit`}>
-                          <Button variant="outline" size="sm" className="bg-transparent">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-transparent"
+                          >
                             <Edit className="w-4 h-4" />
                           </Button>
                         </Link>
@@ -180,7 +225,11 @@ export default function AdminPrompts() {
                           onClick={() => toggleLock(prompt.id)}
                           className="bg-transparent"
                         >
-                          {prompt.isLocked ? <Unlock className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
+                          {prompt.isLocked ? (
+                            <Unlock className="w-4 h-4" />
+                          ) : (
+                            <Lock className="w-4 h-4" />
+                          )}
                         </Button>
                         <Button
                           variant="outline"
@@ -205,10 +254,19 @@ export default function AdminPrompts() {
             Showing {filteredPrompts.length} of {prompts.length} prompts
           </p>
           <div className="flex space-x-2">
-            <Button variant="outline" size="sm" disabled className="bg-transparent">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled
+              className="bg-transparent"
+            >
               Previous
             </Button>
-            <Button variant="outline" size="sm" className="bg-blue-600 text-white">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-blue-600 text-white"
+            >
               1
             </Button>
             <Button variant="outline" size="sm" className="bg-transparent">
@@ -221,5 +279,5 @@ export default function AdminPrompts() {
         </div>
       </div>
     </AdminLayout>
-  )
+  );
 }

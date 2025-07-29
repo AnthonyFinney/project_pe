@@ -1,6 +1,6 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowRight, Sparkles } from "lucide-react"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, Sparkles } from "lucide-react";
 
 export default function Hero() {
   return (
@@ -24,19 +24,29 @@ export default function Hero() {
 
           {/* Subheading */}
           <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Discover professionally crafted AI prompts for writing, coding, design, and business. Boost your
-            productivity and unlock the full potential of AI tools.
+            Discover professionally crafted AI prompts for writing, coding,
+            design, and business. Boost your productivity and unlock the full
+            potential of AI tools.
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button asChild size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-3">
+            <Button
+              asChild
+              size="lg"
+              className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-3"
+            >
               <Link href="/categories" className="flex items-center space-x-2">
                 <span>Browse Categories</span>
                 <ArrowRight className="w-5 h-5" />
               </Link>
             </Button>
-            <Button asChild variant="outline" size="lg" className="text-lg px-8 py-3 bg-transparent">
+            <Button
+              asChild
+              variant="outline"
+              size="lg"
+              className="text-lg px-8 py-3 bg-transparent"
+            >
               <Link href="/prompts">View Free Prompts</Link>
             </Button>
           </div>
@@ -59,5 +69,5 @@ export default function Hero() {
         </div>
       </div>
     </section>
-  )
+  );
 }
