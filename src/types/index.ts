@@ -15,10 +15,12 @@ export type PromptType = {
   category: string;
   categoryName?: string;
   isLocked?: boolean;
-  variables: Variable[];
+  variables?: Variable[];
   thumbnail?: string | null;
-  type?: string;
-  description?: string;
+  description: string;
   useCases?: string[];
   exampleValues?: Record<string, string>;
+  status?: "draft" | "published" | "archived";
+  created_at?: string;
+  updated_at?: string;
 };
