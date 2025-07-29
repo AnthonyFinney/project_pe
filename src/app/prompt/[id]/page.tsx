@@ -185,6 +185,8 @@ export default function PromptDetailPage() {
                       src={prompt.thumbnail || "/placeholder.svg"}
                       alt="Prompt example"
                       className="w-64 h-40 object-cover rounded-lg border border-gray-200 shadow-md"
+                      width={64}
+                      height={40}
                     />
                     <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs flex items-center space-x-1">
                       <Sparkles className="w-3 h-3" />
@@ -409,6 +411,8 @@ export default function PromptDetailPage() {
                         src={prompt.thumbnail || "/placeholder.svg"}
                         alt="Example output"
                         className="w-full h-48 object-cover rounded-lg border border-gray-200"
+                        width={64}
+                        height={48}
                       />
                     </div>
                     <div className="space-y-3">

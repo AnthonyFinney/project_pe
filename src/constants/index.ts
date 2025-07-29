@@ -354,7 +354,7 @@ export const prompts = [
         description: "Optional reference image for inspiration",
       },
     ],
-    thumbnail: "/images/fantasy-landscape-example.png",
+    thumbnail: "/placeholder.jpg",
     type: "image",
     exampleValues: {
       STYLE: "Digital Art",
