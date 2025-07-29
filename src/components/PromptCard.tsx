@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { ExternalLink, ImageIcon, Crown } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 interface PromptCardProps {
   prompt: {
@@ -81,9 +82,13 @@ export default function PromptCard({
         {prompt.thumbnail && (
           <div className="ml-4">
             <div className="relative">
-              <img
-                src={prompt.thumbnail || "/placeholder.svg"}
-                alt="Prompt preview"
+              <Image
+                src={prompt.thumbnail ?? "/placeholder.svg"}
+                alt={
+                  prompt.title ? `${prompt.title} preview` : "Prompt preview"
+                }
+                width={64}
+                height={64}
                 className="w-16 h-16 object-cover rounded-lg border border-gray-200"
               />
               <div className="absolute top-1 right-1 bg-black/50 text-white p-1 rounded">
