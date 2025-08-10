@@ -1,17 +1,16 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
-import type { Database } from "./database.types";
+import type { Database } from "../../types/database.types";
 
 export const createServerClient = () => {
-    const cookieStore = cookies();
     return createServerComponentClient<Database>({
-        cookies: () => cookieStore,
+        cookies,
     });
 };
 
-export const supabase = createServerClient();
-
 export const requireUser = async () => {
+    const supabase = createServerClient();
+
     const {
         data: { user },
         error,
@@ -21,16 +20,19 @@ export const requireUser = async () => {
 };
 
 export const requireAdmin = async () => {
-    const user = await requireUser();
+    const supabase = createServerClient();
 
-    const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
+    const {
+        data: { user },
+        error,
+    } = await supabase.auth.getUser();
+    if (error || !user) throw new Error("Unauthorized");
 
-    if (error) throw error;
-    if (profile?.role !== "admin") throw new Error("Forbidden");
+    const { data: isAdmin, error: rpcErr } = await supabase.rpc("is_admin", {
+        uid: user.id,
+    });
 
+    if (rpcErr) throw rpcErr;
+    if (!isAdmin) throw new Error("Forbidden");
     return user;
 };

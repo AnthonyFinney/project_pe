@@ -16,22 +16,8 @@ export type Variable = {
     description?: string;
 };
 
-export type PromptType = {
-    id: string;
-    title: string;
-    content: string;
-    category: string;
-    categoryName?: string;
-    isLocked?: boolean;
-    variables?: Variable[];
-    thumbnail?: string | null;
-    description: string;
-    useCases?: string[];
-    exampleValues?: Record<string, string>;
-    status?: "draft" | "published" | "archived";
-    created_at?: string;
-    updated_at?: string;
-};
+export type PromptStatus = "draft" | "published" | "archived";
+export type PromptTypeEnum = "text" | "image";
 
 export interface Database {
     public: {
@@ -99,55 +85,55 @@ export interface Database {
                     id: string;
                     title: string;
                     content: string;
-                    category_id: string | null;
-                    variables: Json;
-                    tags: string[];
-                    is_locked: boolean;
-                    status: "draft" | "published" | "archived";
-                    type: "text" | "image";
+                    variables: Json; // array of Variable-like objects
+                    description: string;
                     thumbnail_url: string | null;
-                    description: string | null;
                     use_cases: string[];
                     example_values: Json;
+                    tags: string[];
+                    is_locked: boolean;
+                    status: PromptStatus;
+                    type: PromptTypeEnum;
+                    category_id: string | null;
                     created_by: string | null;
                     created_at: string;
-                    updated_at: string;
+                    updated_at: string | null;
                 };
                 Insert: {
                     id?: string;
                     title: string;
                     content: string;
-                    category_id?: string | null;
                     variables?: Json;
-                    tags?: string[];
-                    is_locked?: boolean;
-                    status?: "draft" | "published" | "archived";
-                    type?: "text" | "image";
+                    description: string;
                     thumbnail_url?: string | null;
-                    description?: string | null;
                     use_cases?: string[];
                     example_values?: Json;
+                    tags?: string[];
+                    is_locked?: boolean;
+                    status?: PromptStatus;
+                    type?: PromptTypeEnum;
+                    category_id?: string | null;
                     created_by?: string | null;
                     created_at?: string;
-                    updated_at?: string;
+                    updated_at?: string | null;
                 };
                 Update: {
                     id?: string;
                     title?: string;
                     content?: string;
-                    category_id?: string | null;
                     variables?: Json;
-                    tags?: string[];
-                    is_locked?: boolean;
-                    status?: "draft" | "published" | "archived";
-                    type?: "text" | "image";
+                    description?: string;
                     thumbnail_url?: string | null;
-                    description?: string | null;
                     use_cases?: string[];
                     example_values?: Json;
+                    tags?: string[];
+                    is_locked?: boolean;
+                    status?: PromptStatus;
+                    type?: PromptTypeEnum;
+                    category_id?: string | null;
                     created_by?: string | null;
                     created_at?: string;
-                    updated_at?: string;
+                    updated_at?: string | null;
                 };
             };
             subscriptions: {
