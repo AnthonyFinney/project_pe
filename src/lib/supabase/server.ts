@@ -8,29 +8,30 @@ export const createServerClient = () => {
     });
 };
 
-export const requireUser = async () => {
-    const supabase = createServerClient();
+export const supabaseServer = createServerClient();
 
+export const requireUser = async () => {
     const {
         data: { user },
         error,
-    } = await supabase.auth.getUser();
+    } = await supabaseServer.auth.getUser();
     if (error || !user) throw new Error("Unauthorized");
     return user;
 };
 
 export const requireAdmin = async () => {
-    const supabase = createServerClient();
-
     const {
         data: { user },
         error,
-    } = await supabase.auth.getUser();
+    } = await supabaseServer.auth.getUser();
     if (error || !user) throw new Error("Unauthorized");
 
-    const { data: isAdmin, error: rpcErr } = await supabase.rpc("is_admin", {
-        uid: user.id,
-    });
+    const { data: isAdmin, error: rpcErr } = await supabaseServer.rpc(
+        "is_admin",
+        {
+            uid: user.id,
+        }
+    );
 
     if (rpcErr) throw rpcErr;
     if (!isAdmin) throw new Error("Forbidden");
