@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +28,7 @@ export default function AccountPage() {
     const [loading, setLoading] = useState(true);
     const [showEmail, setShowEmail] = useState(false);
     const router = useRouter();
-    const supabase = createClient();
+    const supabase = supabaseBrowser();
 
     useEffect(() => {
         const getUser = async () => {

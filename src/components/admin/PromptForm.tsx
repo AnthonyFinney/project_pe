@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,9 +26,17 @@ import {
     X,
     Settings,
 } from "lucide-react";
-import Link from "next/link";
+
 import VariableModal from "@/components/admin/VariableModal";
 import PreviewModal from "@/components/admin/PreviewModal";
+
+// DB types/enums
+import type { Database } from "@/types/database.types";
+import { Constants } from "@/types/database.types";
+
+type PromptStatus = Database["public"]["Enums"]["prompt_status_enum"];
+type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
+type CategoryOption = Pick<CategoryRow, "id" | "name" | "slug">;
 
 export interface Variable {
     id: string;
@@ -44,24 +53,24 @@ export interface PromptFormData {
     title: string;
     description: string;
     content: string;
-    category: string;
+    categorySlug: string; // RPC expects slug
     isLocked: boolean;
-    status: "draft" | "published" | "archived";
+    status: PromptStatus;
     variables: Variable[];
     useCases: string[];
+    tags: string[];
+    thumbnailUrl?: string;
+    exampleValues?: Record<string, any>;
 }
 
-const categories = [
-    { value: "writing", label: "Writing" },
-    { value: "image-generation", label: "Image Generation" },
-    { value: "coding", label: "Coding" },
-    { value: "business", label: "Business" },
-    { value: "marketing", label: "Marketing" },
-    { value: "education", label: "Education" },
-    { value: "creative", label: "Creative" },
-];
+// enum values straight from DB constants (prevents drift)
+const STATUS_VALUES = Constants.public.Enums
+    .prompt_status_enum as readonly PromptStatus[];
+const toPromptStatus = (v: string): PromptStatus =>
+    STATUS_VALUES.includes(v as PromptStatus) ? (v as PromptStatus) : "draft";
 
 interface PromptFormProps {
+    categories?: CategoryOption[]; // make optional; default to []
     initialData?: Partial<PromptFormData>;
     onSave: (data: PromptFormData) => Promise<void>;
     isLoading: boolean;
@@ -70,22 +79,26 @@ interface PromptFormProps {
 }
 
 export default function PromptForm({
+    categories = [], // ✅ avoid categories.length crash
     initialData = {},
     onSave,
     isLoading,
     mode,
     backUrl = "/admin/prompts",
 }: PromptFormProps) {
+    // ✅ safe merge: never overwrite defaults with undefined
     const [promptData, setPromptData] = useState<PromptFormData>({
-        title: "",
-        description: "",
-        content: "",
-        category: "",
-        isLocked: false,
-        status: "draft",
-        variables: [],
-        useCases: [],
-        ...initialData,
+        title: initialData.title ?? "",
+        description: initialData.description ?? "",
+        content: initialData.content ?? "",
+        categorySlug: initialData.categorySlug ?? "",
+        isLocked: initialData.isLocked ?? false,
+        status: initialData.status ?? "draft",
+        variables: initialData.variables ?? [],
+        useCases: initialData.useCases ?? [],
+        tags: initialData.tags ?? [],
+        thumbnailUrl: initialData.thumbnailUrl ?? "",
+        exampleValues: initialData.exampleValues ?? {},
     });
 
     const [showPreview, setShowPreview] = useState(false);
@@ -96,83 +109,140 @@ export default function PromptForm({
     const [previewValues, setPreviewValues] = useState<Record<string, string>>(
         {}
     );
-    const [newTag, setNewTag] = useState("");
+
+    // Local helpers for adding list items
     const [newUseCase, setNewUseCase] = useState("");
+    const [newTag, setNewTag] = useState("");
+
+    // JSON textarea state for exampleValues
+    const [exampleText, setExampleText] = useState(
+        JSON.stringify(promptData.exampleValues ?? {}, null, 2)
+    );
+    const [exampleError, setExampleError] = useState<string | null>(null);
+
+    // Derived flag: any validation blockers
+    const canSave = useMemo(() => {
+        return (
+            !!promptData.title.trim() &&
+            !!promptData.description.trim() &&
+            !!promptData.content.trim() &&
+            !!promptData.categorySlug &&
+            !exampleError
+        );
+    }, [promptData, exampleError]);
+
+    // Prepare category options with slug (filter out null/undefined slugs)
+    const categoryOptions = useMemo(
+        () =>
+            (categories ?? [])
+                .filter(
+                    (c): c is CategoryOption & { slug: string } => !!c?.slug
+                )
+                .map((c) => ({ ...c, name: c.name ?? c.slug })),
+        [categories]
+    );
 
     // Initialize preview values when variables change
     useEffect(() => {
         const initialValues: Record<string, string> = {};
-        promptData.variables.forEach((variable) => {
-            initialValues[variable.name] = "";
+        (promptData.variables ?? []).forEach((v) => {
+            initialValues[v.name] = "";
         });
         setPreviewValues(initialValues);
     }, [promptData.variables]);
 
-    const handleSave = async () => {
-        if (!promptData.title.trim()) {
-            alert("Please enter a prompt title");
-            return;
+    // Keep exampleValues in sync with textarea (validate on change)
+    useEffect(() => {
+        try {
+            const parsed = exampleText.trim() ? JSON.parse(exampleText) : {};
+            setPromptData((p) => ({ ...p, exampleValues: parsed }));
+            setExampleError(null);
+        } catch {
+            setExampleError("Invalid JSON");
         }
-        if (!promptData.description.trim()) {
-            alert("Please enter a prompt description");
-            return;
-        }
-        if (!promptData.content.trim()) {
-            alert("Please enter prompt content");
-            return;
-        }
-        if (!promptData.category) {
-            alert("Please select a category");
-            return;
-        }
+    }, [exampleText]);
 
+    const handleSave = async () => {
+        if (!canSave) {
+            alert(
+                exampleError
+                    ? "Please fix Example Values JSON."
+                    : "Please fill out all required fields."
+            );
+            return;
+        }
         await onSave(promptData);
     };
 
+    // Variables CRUD
     const handleAddVariable = () => {
         setEditingVariable(null);
         setShowVariableModal(true);
     };
-
     const handleEditVariable = (variable: Variable) => {
         setEditingVariable(variable);
         setShowVariableModal(true);
     };
-
-    const handleDeleteVariable = (variableId: string) => {
-        if (confirm("Are you sure you want to delete this variable?")) {
-            setPromptData((prev) => ({
-                ...prev,
-                variables: prev.variables.filter((v) => v.id !== variableId),
-            }));
-        }
+    const handleDeleteVariable = (id: string) => {
+        if (!confirm("Delete this variable?")) return;
+        setPromptData((prev) => ({
+            ...prev,
+            variables: (prev.variables ?? []).filter((v) => v.id !== id),
+        }));
     };
-
     const handleSaveVariable = (variable: Variable) => {
-        if (editingVariable) {
-            setPromptData((prev) => ({
+        setPromptData((prev) => {
+            const list = prev.variables ?? [];
+            const exists = list.some((v) => v.id === variable.id);
+            return {
                 ...prev,
-                variables: prev.variables.map((v) =>
-                    v.id === variable.id ? variable : v
-                ),
-            }));
-        } else {
-            const newVariable = {
-                ...variable,
-                id: Date.now().toString(),
+                variables: exists
+                    ? list.map((v) => (v.id === variable.id ? variable : v))
+                    : [...list, { ...variable, id: Date.now().toString() }],
             };
-            setPromptData((prev) => ({
-                ...prev,
-                variables: [...prev.variables, newVariable],
-            }));
-        }
+        });
         setShowVariableModal(false);
         setEditingVariable(null);
     };
 
+    // Use cases
+    const addUseCase = () => {
+        const val = newUseCase.trim();
+        if (val && !(promptData.useCases ?? []).includes(val)) {
+            setPromptData((prev) => ({
+                ...prev,
+                useCases: [...(prev.useCases ?? []), val],
+            }));
+            setNewUseCase("");
+        }
+    };
+    const removeUseCase = (val: string) =>
+        setPromptData((prev) => ({
+            ...prev,
+            useCases: (prev.useCases ?? []).filter((u) => u !== val),
+        }));
+
+    // Tags
+    const addTag = () => {
+        const val = newTag.trim();
+        if (val && !(promptData.tags ?? []).includes(val)) {
+            setPromptData((prev) => ({
+                ...prev,
+                tags: [...(prev.tags ?? []), val],
+            }));
+            setNewTag("");
+        }
+    };
+    const removeTag = (val: string) =>
+        setPromptData((prev) => ({
+            ...prev,
+            tags: (prev.tags ?? []).filter((t) => t !== val),
+        }));
+
+    // Preview
     const generatePreview = () => {
-        let preview = promptData.content;
-        promptData.variables.forEach((variable) => {
+        let preview = promptData.content ?? "";
+        (promptData.variables ?? []).forEach((variable) => {
             const value = previewValues[variable.name] || `{${variable.name}}`;
             preview = preview.replace(
                 new RegExp(`{${variable.name}}`, "g"),
@@ -180,28 +250,6 @@ export default function PromptForm({
             );
         });
         return preview;
-    };
-
-    const addUseCase = () => {
-        if (
-            newUseCase.trim() &&
-            !promptData.useCases.includes(newUseCase.trim())
-        ) {
-            setPromptData((prev) => ({
-                ...prev,
-                useCases: [...prev.useCases, newUseCase.trim()],
-            }));
-            setNewUseCase("");
-        }
-    };
-
-    const removeUseCase = (useCaseToRemove: string) => {
-        setPromptData((prev) => ({
-            ...prev,
-            useCases: prev.useCases.filter(
-                (useCase) => useCase !== useCaseToRemove
-            ),
-        }));
     };
 
     return (
@@ -237,14 +285,14 @@ export default function PromptForm({
                         variant="outline"
                         onClick={() => setShowPreview(true)}
                         className="bg-transparent"
-                        disabled={!promptData.content.trim()}
+                        disabled={!(promptData.content ?? "").trim()}
                     >
                         <Eye className="w-4 h-4 mr-2" />
                         Preview
                     </Button>
                     <Button
                         onClick={handleSave}
-                        disabled={isLoading}
+                        disabled={isLoading || !canSave}
                         className="bg-blue-600 hover:bg-blue-700"
                     >
                         <Save className="w-4 h-4 mr-2" />
@@ -323,6 +371,24 @@ export default function PromptForm({
                                     {"{variable_name}"}
                                 </p>
                             </div>
+
+                            <div>
+                                <Label htmlFor="thumbnailUrl">
+                                    Thumbnail URL
+                                </Label>
+                                <Input
+                                    id="thumbnailUrl"
+                                    value={promptData.thumbnailUrl ?? ""}
+                                    onChange={(e) =>
+                                        setPromptData((prev) => ({
+                                            ...prev,
+                                            thumbnailUrl: e.target.value,
+                                        }))
+                                    }
+                                    placeholder="https://..."
+                                    className="mt-1"
+                                />
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -331,7 +397,10 @@ export default function PromptForm({
                         <CardHeader>
                             <div className="flex items-center justify-between">
                                 <CardTitle>
-                                    Variables ({promptData.variables.length})
+                                    Variables{" "}
+                                    {(promptData.variables ?? []).length > 0
+                                        ? `(${promptData.variables!.length})`
+                                        : ""}
                                 </CardTitle>
                                 <Button
                                     onClick={handleAddVariable}
@@ -344,7 +413,7 @@ export default function PromptForm({
                             </div>
                         </CardHeader>
                         <CardContent>
-                            {promptData.variables.length === 0 ? (
+                            {(promptData.variables ?? []).length === 0 ? (
                                 <div className="text-center py-8 text-gray-500">
                                     <Settings className="w-12 h-12 mx-auto mb-4 opacity-50" />
                                     <p>No variables defined yet.</p>
@@ -355,70 +424,74 @@ export default function PromptForm({
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {promptData.variables.map((variable) => (
-                                        <div
-                                            key={variable.id}
-                                            className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
-                                        >
-                                            <div className="flex-1">
-                                                <div className="flex items-center space-x-2">
-                                                    <span className="font-medium">
-                                                        {variable.label}
-                                                    </span>
-                                                    <Badge variant="secondary">
-                                                        {variable.type}
-                                                    </Badge>
-                                                    {variable.required && (
-                                                        <Badge
-                                                            variant="destructive"
-                                                            className="text-xs"
-                                                        >
-                                                            Required
+                                    {(promptData.variables ?? []).map(
+                                        (variable) => (
+                                            <div
+                                                key={variable.id}
+                                                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                                            >
+                                                <div className="flex-1">
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className="font-medium">
+                                                            {variable.label}
+                                                        </span>
+                                                        <Badge variant="secondary">
+                                                            {variable.type}
                                                         </Badge>
+                                                        {variable.required && (
+                                                            <Badge
+                                                                variant="destructive"
+                                                                className="text-xs"
+                                                            >
+                                                                Required
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-sm text-gray-600 mt-1">
+                                                        Variable:{" "}
+                                                        <code className="bg-gray-100 px-1 rounded">
+                                                            {"{" +
+                                                                variable.name +
+                                                                "}"}
+                                                        </code>
+                                                    </p>
+                                                    {variable.description && (
+                                                        <p className="text-xs text-gray-500 mt-1">
+                                                            {
+                                                                variable.description
+                                                            }
+                                                        </p>
                                                     )}
                                                 </div>
-                                                <p className="text-sm text-gray-600 mt-1">
-                                                    Variable:{" "}
-                                                    <code className="bg-gray-100 px-1 rounded">
-                                                        {"{" +
-                                                            variable.name +
-                                                            "}"}
-                                                    </code>
-                                                </p>
-                                                {variable.description && (
-                                                    <p className="text-xs text-gray-500 mt-1">
-                                                        {variable.description}
-                                                    </p>
-                                                )}
+                                                <div className="flex items-center space-x-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            handleEditVariable(
+                                                                variable
+                                                            )
+                                                        }
+                                                        className="bg-transparent"
+                                                    >
+                                                        <Edit className="w-4 h-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            handleDeleteVariable(
+                                                                variable.id
+                                                            )
+                                                        }
+                                                        className="bg-transparent text-red-600 hover:text-red-700"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center space-x-2">
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        handleEditVariable(
-                                                            variable
-                                                        )
-                                                    }
-                                                    className="bg-transparent"
-                                                >
-                                                    <Edit className="w-4 h-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={() =>
-                                                        handleDeleteVariable(
-                                                            variable.id
-                                                        )
-                                                    }
-                                                    className="bg-transparent text-red-600 hover:text-red-700"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ))}
+                                        )
+                                    )}
                                 </div>
                             )}
                         </CardContent>
@@ -431,25 +504,27 @@ export default function PromptForm({
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
-                                {promptData.useCases.map((useCase, index) => (
-                                    <div
-                                        key={index}
-                                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
-                                    >
-                                        <span className="text-sm">
-                                            {useCase}
-                                        </span>
-                                        <button
-                                            onClick={() =>
-                                                removeUseCase(useCase)
-                                            }
-                                            className="text-red-600 hover:text-red-700"
+                                {(promptData.useCases ?? []).map(
+                                    (useCase, index) => (
+                                        <div
+                                            key={index}
+                                            className="flex items-center justify-between p-2 bg-gray-50 rounded"
                                         >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ))}
-                                {promptData.useCases.length === 0 && (
+                                            <span className="text-sm">
+                                                {useCase}
+                                            </span>
+                                            <button
+                                                onClick={() =>
+                                                    removeUseCase(useCase)
+                                                }
+                                                className="text-red-600 hover:text-red-700"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    )
+                                )}
+                                {(promptData.useCases ?? []).length === 0 && (
                                     <p className="text-gray-500 text-sm">
                                         No use cases added yet
                                     </p>
@@ -462,8 +537,9 @@ export default function PromptForm({
                                         setNewUseCase(e.target.value)
                                     }
                                     placeholder="Add a use case..."
-                                    onKeyPress={(e) =>
-                                        e.key === "Enter" && addUseCase()
+                                    onKeyDown={(e) =>
+                                        e.key === "Enter" &&
+                                        (e.preventDefault(), addUseCase())
                                     }
                                     className="flex-1"
                                 />
@@ -476,6 +552,82 @@ export default function PromptForm({
                                     <Plus className="w-4 h-4" />
                                 </Button>
                             </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Tags */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Tags</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex flex-wrap gap-2">
+                                {(promptData.tags ?? []).map((tag) => (
+                                    <span
+                                        key={tag}
+                                        className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs text-gray-800"
+                                    >
+                                        {tag}
+                                        <button
+                                            onClick={() => removeTag(tag)}
+                                            className="text-gray-500 hover:text-gray-700"
+                                            aria-label={`Remove ${tag}`}
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </span>
+                                ))}
+                                {(promptData.tags ?? []).length === 0 && (
+                                    <p className="text-gray-500 text-sm">
+                                        No tags yet. Add a few keywords.
+                                    </p>
+                                )}
+                            </div>
+                            <div className="flex gap-2">
+                                <Input
+                                    value={newTag}
+                                    onChange={(e) => setNewTag(e.target.value)}
+                                    placeholder="Add a tag…"
+                                    onKeyDown={(e) =>
+                                        e.key === "Enter" &&
+                                        (e.preventDefault(), addTag())
+                                    }
+                                    className="flex-1"
+                                />
+                                <Button
+                                    onClick={addTag}
+                                    size="sm"
+                                    variant="outline"
+                                    className="bg-transparent"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Example Values (JSON) */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Example Values (JSON)</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2">
+                            <Textarea
+                                value={exampleText}
+                                onChange={(e) => setExampleText(e.target.value)}
+                                placeholder='{"var1":"example", "var2": 123}'
+                                className="font-mono text-sm min-h-[160px]"
+                            />
+                            {exampleError ? (
+                                <p className="text-xs text-red-600">
+                                    {exampleError}
+                                </p>
+                            ) : (
+                                <p className="text-xs text-gray-500">
+                                    This JSON is stored and used to prefill your
+                                    variables in examples.
+                                </p>
+                            )}
                         </CardContent>
                     </Card>
                 </div>
@@ -491,43 +643,59 @@ export default function PromptForm({
                             <div>
                                 <Label htmlFor="category">Category *</Label>
                                 <Select
-                                    value={promptData.category}
+                                    value={promptData.categorySlug}
                                     onValueChange={(value) =>
                                         setPromptData((prev) => ({
                                             ...prev,
-                                            category: value,
+                                            categorySlug: value,
                                         }))
+                                    }
+                                    disabled={
+                                        (categoryOptions ?? []).length === 0
                                     }
                                 >
                                     <SelectTrigger className="mt-1">
-                                        <SelectValue placeholder="Select category..." />
+                                        <SelectValue
+                                            placeholder={
+                                                (categoryOptions ?? []).length
+                                                    ? "Select category..."
+                                                    : "No categories found"
+                                            }
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {categories.map((category) => (
+                                        {(categoryOptions ?? []).map((c) => (
                                             <SelectItem
-                                                key={category.value}
-                                                value={category.value}
+                                                key={c.slug}
+                                                value={c.slug}
                                             >
-                                                {category.label}
+                                                {c.name ?? c.slug}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {(categoryOptions ?? []).length === 0 && (
+                                    <p className="text-xs text-amber-700 mt-1">
+                                        No categories yet.{" "}
+                                        <Link
+                                            href="/admin/categories/new"
+                                            className="underline"
+                                        >
+                                            Create one
+                                        </Link>
+                                        .
+                                    </p>
+                                )}
                             </div>
 
                             <div>
                                 <Label htmlFor="status">Status</Label>
                                 <Select
                                     value={promptData.status}
-                                    onValueChange={(
-                                        value:
-                                            | "draft"
-                                            | "published"
-                                            | "archived"
-                                    ) =>
+                                    onValueChange={(value) =>
                                         setPromptData((prev) => ({
                                             ...prev,
-                                            status: value,
+                                            status: toPromptStatus(value),
                                         }))
                                     }
                                 >
@@ -535,15 +703,12 @@ export default function PromptForm({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="draft">
-                                            Draft
-                                        </SelectItem>
-                                        <SelectItem value="published">
-                                            Published
-                                        </SelectItem>
-                                        <SelectItem value="archived">
-                                            Archived
-                                        </SelectItem>
+                                        {STATUS_VALUES.map((s) => (
+                                            <SelectItem key={s} value={s}>
+                                                {s.charAt(0).toUpperCase() +
+                                                    s.slice(1)}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -559,7 +724,7 @@ export default function PromptForm({
                                 </div>
                                 <Switch
                                     id="premium"
-                                    checked={promptData.isLocked}
+                                    checked={!!promptData.isLocked}
                                     onCheckedChange={(checked) =>
                                         setPromptData((prev) => ({
                                             ...prev,
@@ -582,7 +747,7 @@ export default function PromptForm({
                                     Variables:
                                 </span>
                                 <span className="font-medium">
-                                    {promptData.variables.length}
+                                    {(promptData.variables ?? []).length}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm">
@@ -590,7 +755,13 @@ export default function PromptForm({
                                     Use Cases:
                                 </span>
                                 <span className="font-medium">
-                                    {promptData.useCases.length}
+                                    {(promptData.useCases ?? []).length}
+                                </span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-600">Tags:</span>
+                                <span className="font-medium">
+                                    {(promptData.tags ?? []).length}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm">
@@ -598,14 +769,14 @@ export default function PromptForm({
                                     Characters:
                                 </span>
                                 <span className="font-medium">
-                                    {promptData.content.length}
+                                    {(promptData.content ?? "").length}
                                 </span>
                             </div>
                         </CardContent>
                     </Card>
 
                     {/* Quick Preview */}
-                    {promptData.content && (
+                    {(promptData.content ?? "").length > 0 && (
                         <Card>
                             <CardHeader>
                                 <CardTitle>Quick Preview</CardTitle>
@@ -613,7 +784,7 @@ export default function PromptForm({
                             <CardContent>
                                 <div className="bg-gray-50 p-4 rounded-lg">
                                     <p className="text-sm whitespace-pre-wrap">
-                                        {promptData.content.replace(
+                                        {(promptData.content ?? "").replace(
                                             /\{([^}]+)\}/g,
                                             "{$1}"
                                         )}

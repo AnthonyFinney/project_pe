@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Zap, User, LogOut, Shield } from "lucide-react";
-import { createClient, getMyRole } from "@/lib/supabase/client";
+import { supabaseBrowser, getMyRole } from "@/lib/supabase/client";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -22,7 +22,7 @@ export default function Navbar() {
     const [roleLoading, setRoleLoading] = useState(false);
 
     const router = useRouter();
-    const supabase = createClient();
+    const supabase = supabaseBrowser();
 
     useEffect(() => {
         // Check if Supabase is configured
@@ -255,6 +255,16 @@ export default function Navbar() {
                                     >
                                         Billing
                                     </Link>
+                                    {/* Admin-only link */}
+                                    {role === "admin" && !roleLoading && (
+                                        <Link
+                                            href="/admin"
+                                            className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+                                            onClick={() => setIsMenuOpen(false)}
+                                        >
+                                            Admin Dashboard
+                                        </Link>
+                                    )}
                                     <button
                                         onClick={() => {
                                             handleSignOut();
