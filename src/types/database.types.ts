@@ -308,6 +308,10 @@ export type Database = {
                 Args: { uid: string };
                 Returns: boolean;
             };
+            is_paid: {
+                Args: Record<PropertyKey, never>;
+                Returns: boolean;
+            };
             publish_prompt: {
                 Args: { p_id: string; make_published?: boolean };
                 Returns: undefined;
@@ -316,6 +320,12 @@ export type Database = {
         Enums: {
             prompt_status_enum: "draft" | "published" | "archived";
             prompt_type_enum: "text" | "image";
+            subscription_status:
+                | "trialing"
+                | "active"
+                | "past_due"
+                | "canceled"
+                | "incomplete";
         };
         CompositeTypes: {
             [_ in never]: never;
@@ -448,6 +458,13 @@ export const Constants = {
         Enums: {
             prompt_status_enum: ["draft", "published", "archived"],
             prompt_type_enum: ["text", "image"],
+            subscription_status: [
+                "trialing",
+                "active",
+                "past_due",
+                "canceled",
+                "incomplete",
+            ],
         },
     },
 } as const;

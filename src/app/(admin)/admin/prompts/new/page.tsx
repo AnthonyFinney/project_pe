@@ -2,7 +2,7 @@
 import PromptForm, { type PromptFormData } from "@/components/admin/PromptForm";
 import { supabaseServer } from "@/lib/supabase/server";
 import type { Database } from "@/types/database.types";
-import { createPrompt as createPromptAction } from "../../actions/prompts";
+import { createPromptAction } from "../../actions/prompts";
 
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 type CategoryOption = Pick<CategoryRow, "id" | "name" | "slug">;
@@ -33,12 +33,11 @@ export default async function NewPromptPage() {
         fd.set("type", "text"); // or collect from form later
         fd.set("use_cases", input.useCases.join(", "));
         fd.set("variables", JSON.stringify(input.variables)); // stored as JSON
-        // Optional (wire up in your form if/when you add them):
         fd.set("tags", input.tags.join(", "));
         fd.set("thumbnail_url", input.thumbnailUrl ?? "");
         fd.set("example_values", JSON.stringify(input.exampleValues ?? {}));
 
-        await createPromptAction(fd); // this will redirect to /admin/prompts/:id/edit
+        await createPromptAction(fd); // this will redirect to /admin/prompts
     }
 
     return (

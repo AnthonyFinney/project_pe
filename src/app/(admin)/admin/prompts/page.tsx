@@ -1,97 +1,89 @@
-"use client";
-
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-    Plus,
-    Search,
-    Filter,
-    Edit,
-    Trash2,
-    Eye,
-    Lock,
-    Unlock,
-} from "lucide-react";
+// app/admin/prompts/page.tsx
 import Link from "next/link";
+import { requireAdmin } from "@/lib/supabase/server";
+import {
+    getAllPromptsAction,
+    deletePromptAction,
+    toggleLockAction,
+} from "../actions/prompts";
+import { Button } from "@/components/ui/button";
+import { Plus, Search, Filter, Edit, Lock, Unlock } from "lucide-react";
+import DeletePromptForm from "@/components/admin/DeletePromptForm";
 
-const mockPrompts = [
-    {
-        id: "1",
-        title: "Creative Blog Post Writer",
-        category: "Writing",
-        status: "published",
-        isLocked: false,
-        createdAt: "2024-01-15",
-        updatedAt: "2024-01-20",
-    },
-    {
-        id: "2",
-        title: "Fantasy Landscape Generator",
-        category: "Image Generation",
-        status: "published",
-        isLocked: false,
-        createdAt: "2024-01-10",
-        updatedAt: "2024-01-18",
-    },
-    {
-        id: "3",
-        title: "Advanced SEO Content Strategy",
-        category: "Writing",
-        status: "published",
-        isLocked: true,
-        createdAt: "2024-01-08",
-        updatedAt: "2024-01-16",
-    },
-    {
-        id: "4",
-        title: "Portrait Photography Prompt",
-        category: "Image Generation",
-        status: "draft",
-        isLocked: true,
-        createdAt: "2024-01-22",
-        updatedAt: "2024-01-22",
-    },
-];
+type SearchParams = {
+    q?: string | string[];
+    status?: "all" | "draft" | "published" | "archived" | string | string[];
+    category?: string | string[]; // category slug
+    page?: string | string[];
+};
 
-export default function AdminPrompts() {
-    const [prompts, setPrompts] = useState(mockPrompts);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [selectedCategory, setSelectedCategory] = useState("all");
-    const [selectedStatus, setSelectedStatus] = useState("all");
+function valOf(v: string | string[] | undefined) {
+    return typeof v === "string" ? v : Array.isArray(v) ? v[0] : undefined;
+}
 
-    const filteredPrompts = prompts.filter((prompt) => {
-        const matchesSearch = prompt.title
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase());
-        const matchesCategory =
-            selectedCategory === "all" || prompt.category === selectedCategory;
-        const matchesStatus =
-            selectedStatus === "all" || prompt.status === selectedStatus;
-        return matchesSearch && matchesCategory && matchesStatus;
+function getStatusBadge(status: string) {
+    const styles: Record<string, string> = {
+        published: "bg-green-100 text-green-800",
+        draft: "bg-yellow-100 text-yellow-800",
+        archived: "bg-gray-100 text-gray-800",
+    };
+    return styles[status] ?? styles.draft;
+}
+
+export default async function AdminPromptsPage({
+    searchParams,
+}: {
+    searchParams: Promise<SearchParams>;
+}) {
+    await requireAdmin();
+
+    // Next.js requires awaiting searchParams in Server Components
+    const sp = await searchParams;
+
+    const q = (valOf(sp.q) ?? "").trim();
+    const status =
+        (valOf(sp.status) as
+            | "all"
+            | "draft"
+            | "published"
+            | "archived"
+            | undefined) ?? "all";
+    const categorySlug = valOf(sp.category) || undefined;
+    const page = Math.max(1, Number(valOf(sp.page) ?? "1"));
+    const pageSize = 20;
+
+    const {
+        items,
+        count,
+        page: curPage,
+        pageSize: curSize,
+    } = await getAllPromptsAction({
+        search: q || undefined,
+        status,
+        categorySlug,
+        isLocked: "all",
+        page,
+        pageSize,
+        sortBy: "updated_at",
+        sortDir: "desc",
     });
 
-    const handleDelete = (id: string) => {
-        if (confirm("Are you sure you want to delete this prompt?")) {
-            setPrompts(prompts.filter((p) => p.id !== id));
-        }
-    };
+    const totalPages = Math.max(1, Math.ceil(count / curSize));
 
-    const toggleLock = (id: string) => {
-        setPrompts(
-            prompts.map((p) =>
-                p.id === id ? { ...p, isLocked: !p.isLocked } : p
-            )
-        );
-    };
+    // Build query helpers for pagination links
+    const base = new URLSearchParams();
+    if (q) base.set("q", q);
+    if (status && status !== "all") base.set("status", status);
+    if (categorySlug) base.set("category", categorySlug);
 
-    const getStatusBadge = (status: string) => {
-        const styles = {
-            published: "bg-green-100 text-green-800",
-            draft: "bg-yellow-100 text-yellow-800",
-            archived: "bg-gray-100 text-gray-800",
-        };
-        return styles[status as keyof typeof styles] || styles.draft;
-    };
+    const prevHref = `/admin/prompts?${new URLSearchParams({
+        ...Object.fromEntries(base.entries()),
+        page: String(Math.max(1, curPage - 1)),
+    })}`;
+    const nextHref = `/admin/prompts?${new URLSearchParams({
+        ...Object.fromEntries(base.entries()),
+        page: String(Math.min(totalPages, curPage + 1)),
+    })}`;
 
     return (
         <div className="space-y-6">
@@ -115,33 +107,49 @@ export default function AdminPrompts() {
 
             {/* Filters */}
             <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {/* Submit via GET to filter on the server */}
+                <form
+                    className="grid grid-cols-1 md:grid-cols-4 gap-4"
+                    action="/admin/prompts"
+                    method="get"
+                >
                     <div className="relative">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
+                            name="q"
+                            defaultValue={q}
                             placeholder="Search prompts..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                     </div>
+
+                    {/* Category filter (by slug) from current page items */}
                     <select
-                        value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        name="category"
+                        defaultValue={categorySlug ?? ""}
                         className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                        <option value="all">All Categories</option>
-                        <option value="Writing">Writing</option>
-                        <option value="Image Generation">
-                            Image Generation
-                        </option>
-                        <option value="Coding">Coding</option>
-                        <option value="Business">Business</option>
+                        <option value="">All Categories</option>
+                        {Array.from(
+                            new Map(
+                                items
+                                    .filter((i) => i.category?.slug)
+                                    .map((i) => [
+                                        i.category!.slug!,
+                                        i.category!.name ?? i.category!.slug!,
+                                    ])
+                            ).entries()
+                        ).map(([slug, label]) => (
+                            <option key={slug} value={slug}>
+                                {label}
+                            </option>
+                        ))}
                     </select>
+
                     <select
-                        value={selectedStatus}
-                        onChange={(e) => setSelectedStatus(e.target.value)}
+                        name="status"
+                        defaultValue={status}
                         className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                         <option value="all">All Status</option>
@@ -149,11 +157,16 @@ export default function AdminPrompts() {
                         <option value="draft">Draft</option>
                         <option value="archived">Archived</option>
                     </select>
-                    <Button variant="outline" className="bg-transparent">
+
+                    <Button
+                        type="submit"
+                        variant="outline"
+                        className="bg-transparent"
+                    >
                         <Filter className="w-4 h-4 mr-2" />
-                        More Filters
+                        Apply
                     </Button>
-                </div>
+                </form>
             </div>
 
             {/* Prompts Table */}
@@ -180,7 +193,7 @@ export default function AdminPrompts() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {filteredPrompts.map((prompt) => (
+                            {items.map((prompt) => (
                                 <tr
                                     key={prompt.id}
                                     className="hover:bg-gray-50"
@@ -188,7 +201,7 @@ export default function AdminPrompts() {
                                     <td className="py-3 px-4">
                                         <div className="flex items-center space-x-2">
                                             <span className="font-medium text-gray-900">
-                                                {prompt.title}
+                                                {prompt.title ?? "(untitled)"}
                                             </span>
                                             {prompt.isLocked && (
                                                 <Lock className="w-4 h-4 text-yellow-600" />
@@ -196,29 +209,28 @@ export default function AdminPrompts() {
                                         </div>
                                     </td>
                                     <td className="py-3 px-4 text-gray-600">
-                                        {prompt.category}
+                                        {prompt.category?.name ??
+                                            prompt.category?.slug ??
+                                            "—"}
                                     </td>
                                     <td className="py-3 px-4">
                                         <span
                                             className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(
-                                                prompt.status
+                                                String(prompt.status ?? "draft")
                                             )}`}
                                         >
-                                            {prompt.status}
+                                            {String(prompt.status ?? "draft")}
                                         </span>
                                     </td>
                                     <td className="py-3 px-4 text-gray-600">
-                                        {prompt.updatedAt}
+                                        {prompt.updatedAt
+                                            ? new Date(
+                                                  prompt.updatedAt
+                                              ).toLocaleString()
+                                            : "—"}
                                     </td>
                                     <td className="py-3 px-4">
-                                        <div className="flex items-center space-x-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                className="bg-transparent"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                            </Button>
+                                        <div className="flex items-center gap-2">
                                             <Link
                                                 href={`/admin/prompts/${prompt.id}/edit`}
                                             >
@@ -230,34 +242,55 @@ export default function AdminPrompts() {
                                                     <Edit className="w-4 h-4" />
                                                 </Button>
                                             </Link>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() =>
-                                                    toggleLock(prompt.id)
-                                                }
-                                                className="bg-transparent"
-                                            >
-                                                {prompt.isLocked ? (
-                                                    <Unlock className="w-4 h-4" />
-                                                ) : (
-                                                    <Lock className="w-4 h-4" />
-                                                )}
-                                            </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() =>
-                                                    handleDelete(prompt.id)
-                                                }
-                                                className="bg-transparent text-red-600 hover:text-red-700"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </Button>
+
+                                            {/* Toggle lock (server action) */}
+                                            <form action={toggleLockAction}>
+                                                <input
+                                                    type="hidden"
+                                                    name="id"
+                                                    value={prompt.id}
+                                                />
+                                                <input
+                                                    type="hidden"
+                                                    name="current"
+                                                    value={String(
+                                                        prompt.isLocked
+                                                    )}
+                                                />
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="bg-transparent"
+                                                    type="submit"
+                                                >
+                                                    {prompt.isLocked ? (
+                                                        <Unlock className="w-4 h-4" />
+                                                    ) : (
+                                                        <Lock className="w-4 h-4" />
+                                                    )}
+                                                </Button>
+                                            </form>
+
+                                            {/* Delete (server action) with client-side confirm */}
+                                            <DeletePromptForm
+                                                id={prompt.id}
+                                                action={deletePromptAction}
+                                            />
                                         </div>
                                     </td>
                                 </tr>
                             ))}
+
+                            {items.length === 0 && (
+                                <tr>
+                                    <td
+                                        colSpan={5}
+                                        className="py-8 text-center text-gray-500"
+                                    >
+                                        No prompts found.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -266,38 +299,32 @@ export default function AdminPrompts() {
             {/* Pagination */}
             <div className="flex items-center justify-between">
                 <p className="text-sm text-gray-600">
-                    Showing {filteredPrompts.length} of {prompts.length} prompts
+                    Showing {items.length} of {count} prompts
                 </p>
                 <div className="flex space-x-2">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        disabled
-                        className="bg-transparent"
-                    >
-                        Previous
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-blue-600 text-white"
-                    >
-                        1
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-transparent"
-                    >
-                        2
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-transparent"
-                    >
-                        Next
-                    </Button>
+                    <Link href={prevHref} aria-disabled={curPage <= 1}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={curPage <= 1}
+                            className="bg-transparent"
+                        >
+                            Previous
+                        </Button>
+                    </Link>
+                    <span className="px-3 py-2 text-sm border rounded bg-white">
+                        Page {curPage} / {totalPages}
+                    </span>
+                    <Link href={nextHref} aria-disabled={curPage >= totalPages}>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={curPage >= totalPages}
+                            className="bg-transparent"
+                        >
+                            Next
+                        </Button>
+                    </Link>
                 </div>
             </div>
         </div>

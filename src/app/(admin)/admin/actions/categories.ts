@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { Database } from "@/types/database.types";
 
 const slugify = (s: string) =>
     s
@@ -10,7 +11,7 @@ const slugify = (s: string) =>
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "");
 
-export async function createCategory(formData: FormData) {
+export async function createCategoryAction(formData: FormData) {
     const { client } = await requireAdmin();
 
     const name = String(formData.get("name") || "").trim();
@@ -36,9 +37,19 @@ export async function createCategory(formData: FormData) {
     redirect("/admin/categories");
 }
 
-export async function removeCategory(id: string) {
+export async function removeCategoryAction(id: string) {
     const { client } = await requireAdmin();
     const { error } = await client.from("categories").delete().eq("id", id);
     if (error) throw error;
     revalidatePath("/admin/categories");
 }
+
+export const getCategoriesAction = async () => {
+    const { client } = await requireAdmin();
+    const { data, error } = await client
+        .from("categories")
+        .select("id,name,slug")
+        .order("name");
+    if (error) throw error;
+    return data as Database["public"]["Tables"]["categories"]["Row"][];
+};

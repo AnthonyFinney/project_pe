@@ -1,9 +1,9 @@
 // src/app/admin/categories/new/page.tsx
-import { createCategory } from "../../actions/categories";
+import { createCategoryAction } from "../../actions/categories";
 
 export default function NewCategoryPage() {
     return (
-        <form action={createCategory} className="max-w-md space-y-3">
+        <form action={createCategoryAction} className="max-w-md space-y-3">
             <label className="grid gap-1">
                 <span>Name *</span>
                 <input name="name" className="border rounded px-2 py-1" />

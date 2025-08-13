@@ -1,101 +1,90 @@
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import AdminLayout from "@/components/admin/AdminLayout";
+// app/(admin)/admin/prompts/[id]/edit/page.tsx
+import { notFound } from "next/navigation";
 import PromptForm, { type PromptFormData } from "@/components/admin/PromptForm";
+import type { Database } from "@/types/database.types";
+import { requireAdmin } from "@/lib/supabase/server";
+import { getPromptAction, savePromptAction } from "../../../actions/prompts";
+import { getCategoriesAction } from "../../../actions/categories";
 
-// Mock data for the prompt being edited
-const mockPrompt: PromptFormData = {
-    title: "Creative Blog Post Writer",
-    description:
-        "Generate engaging and creative blog posts on any topic with customizable tone and style.",
-    content:
-        "Write a {tone} blog post about {topic} that is approximately {word_count} words long. The target audience is {audience}. Include {key_points} key points and make sure to {call_to_action}.",
-    category: "writing",
-    isLocked: false,
-    status: "published",
-    variables: [
-        {
-            id: "1",
-            name: "tone",
-            label: "Writing Tone",
-            type: "select",
-            placeholder: "Select tone...",
-            description: "Choose the tone for your blog post",
-            required: true,
-            options: [
-                "Professional",
-                "Casual",
-                "Friendly",
-                "Authoritative",
-                "Conversational",
-            ],
-        },
-        {
-            id: "2",
-            name: "topic",
-            label: "Blog Topic",
-            type: "text",
-            placeholder: "Enter your blog topic...",
-            description: "The main topic or subject of your blog post",
-            required: true,
-        },
-        {
-            id: "3",
-            name: "word_count",
-            label: "Word Count",
-            type: "number",
-            placeholder: "500",
-            description: "Approximate number of words for the blog post",
-            required: false,
-        },
-        {
-            id: "4",
-            name: "audience",
-            label: "Target Audience",
-            type: "text",
-            placeholder: "e.g., small business owners, students, professionals",
-            description: "Who is the intended audience for this blog post?",
-            required: true,
-        },
-    ],
-    useCases: [
-        "Content marketing campaigns",
-        "Personal blogging",
-        "Business communications",
-        "Educational content",
-    ],
-};
+type Db = Database;
+type CategoryRow = Db["public"]["Tables"]["categories"]["Row"];
+type PromptStatus = Db["public"]["Enums"]["prompt_status_enum"];
 
-export default function EditPrompt({ params }: { params: { id: string } }) {
-    const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+export default async function EditPromptPage({
+    params,
+}: {
+    params: Promise<{ id: string }>;
+}) {
+    await requireAdmin(); // gate the route
 
-    const handleSave = async (promptData: PromptFormData) => {
-        setIsLoading(true);
-        try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            console.log("Updating prompt:", promptData);
-            router.push("/admin/prompts");
-        } catch (error) {
-            console.error("Error updating prompt:", error);
-            alert("Failed to update prompt. Please try again.");
-        } finally {
-            setIsLoading(false);
-        }
+    // ✅ Await params before use
+    const { id: promptId } = await params;
+
+    // Fetch prompt + categories on the server
+    const [prompt, categories] = await Promise.all([
+        getPromptAction(promptId),
+        getCategoriesAction(),
+    ]);
+
+    if (!prompt) return notFound();
+
+    const cats = (categories ?? []) as Pick<
+        CategoryRow,
+        "id" | "name" | "slug"
+    >[];
+    const categorySlug =
+        cats.find((c) => c.id === prompt.category_id)?.slug ?? "";
+
+    // Map DB row -> PromptFormData the form expects
+    const initialData: PromptFormData = {
+        title: prompt.title ?? "",
+        description: prompt.description ?? "",
+        content: prompt.content ?? "",
+        categorySlug,
+        isLocked: !!prompt.is_locked,
+        status: (prompt.status ?? "draft") as PromptStatus,
+        variables: (prompt.variables as any[]) ?? [],
+        useCases: (prompt.use_cases as string[]) ?? [],
+        tags: (prompt.tags as string[]) ?? [],
+        thumbnailUrl: prompt.thumbnail_url ?? "",
+        exampleValues: (prompt.example_values as Record<string, any>) ?? {},
     };
 
+    // Bridge: PromptFormData -> FormData -> your savePromptAction(id, fd)
+    async function saveFromForm(input: PromptFormData) {
+        "use server";
+
+        const fd = new FormData();
+        fd.set("title", input.title);
+        fd.set("content", input.content);
+        fd.set("description", input.description ?? "");
+
+        // Slug -> id for your existing savePromptAction
+        const cat = cats.find((c) => c.slug === input.categorySlug);
+        if (cat?.id) fd.set("category_id", cat.id);
+
+        // Arrays / JSON
+        fd.set("use_cases", input.useCases.join(", "));
+        fd.set("tags", input.tags.join(", "));
+        fd.set("variables", JSON.stringify(input.variables ?? []));
+        fd.set("example_values", JSON.stringify(input.exampleValues ?? {}));
+
+        // Flags / optionals
+        fd.set("status", input.status);
+        fd.set("is_locked", String(input.isLocked));
+        fd.set("thumbnail_url", input.thumbnailUrl ?? "");
+
+        await savePromptAction(promptId, fd); // ✅ use awaited promptId
+    }
+
     return (
-        <AdminLayout>
-            <PromptForm
-                mode="edit"
-                initialData={mockPrompt}
-                onSave={handleSave}
-                isLoading={isLoading}
-                backUrl="/admin/prompts"
-            />
-        </AdminLayout>
+        <PromptForm
+            categories={cats}
+            initialData={initialData}
+            onSave={saveFromForm}
+            isLoading={false}
+            mode="edit"
+            backUrl="/admin/prompts"
+        />
     );
 }

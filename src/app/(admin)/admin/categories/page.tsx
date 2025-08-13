@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { supabaseServer } from "@/lib/supabase/server";
-import { removeCategory } from "../actions/categories";
+import { removeCategoryAction } from "../actions/categories";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Trash2, Tag } from "lucide-react";
@@ -124,7 +124,7 @@ export default async function CategoriesPage() {
                         </Link> */}
 
                                                 <form
-                                                    action={removeCategory.bind(
+                                                    action={removeCategoryAction.bind(
                                                         null,
                                                         c.id
                                                     )}
