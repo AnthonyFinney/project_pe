@@ -1,18 +1,34 @@
-// src/app/admin/categories/new/page.tsx
 import Link from "next/link";
+import { notFound, redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/supabase/server";
-import { createCategoryAction } from "../../actions/categories";
+import { updateCategoryAction } from "../../../actions/categories";
 
-export default async function NewCategoryPage() {
-    await requireAdmin(); // protect the route
+type PageProps = {
+    params: { id: string };
+};
+
+export default async function EditCategoryPage({ params }: PageProps) {
+    const { client } = await requireAdmin();
+
+    const { data: category, error } = await client
+        .from("categories")
+        .select("id, name, icon, description")
+        .eq("id", params.id)
+        .single();
+
+    if (error) {
+        console.error(error);
+        notFound();
+    }
+    if (!category) notFound();
 
     return (
         <div className="max-w-xl space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-semibold">New Category</h1>
+                    <h1 className="text-2xl font-semibold">Edit Category</h1>
                     <p className="text-gray-600">
-                        Create a category to organize prompts
+                        Update details for this category
                     </p>
                 </div>
                 <Link
@@ -23,7 +39,10 @@ export default async function NewCategoryPage() {
                 </Link>
             </div>
 
-            <form action={createCategoryAction} className="space-y-4">
+            {/* Update form */}
+            <form action={updateCategoryAction} className="space-y-4">
+                <input type="hidden" name="id" value={category.id} />
+
                 <label className="grid gap-1">
                     <span className="font-medium">Name *</span>
                     <input
@@ -31,6 +50,7 @@ export default async function NewCategoryPage() {
                         required
                         minLength={2}
                         maxLength={80}
+                        defaultValue={category.name ?? ""}
                         placeholder="e.g. Writing"
                         className="border rounded px-3 py-2"
                     />
@@ -46,6 +66,7 @@ export default async function NewCategoryPage() {
                         required
                         minLength={2}
                         maxLength={80}
+                        defaultValue={category.icon ?? ""}
                         placeholder="icon name"
                         className="border rounded px-3 py-2"
                     />
@@ -59,6 +80,7 @@ export default async function NewCategoryPage() {
                     <textarea
                         name="description"
                         rows={3}
+                        defaultValue={category.description ?? ""}
                         placeholder="Optional description…"
                         className="border rounded px-3 py-2"
                     />
@@ -66,7 +88,7 @@ export default async function NewCategoryPage() {
 
                 <div className="flex gap-2">
                     <button className="px-3 py-2 rounded bg-black text-white">
-                        Create
+                        Save changes
                     </button>
                     <Link
                         href="/admin/categories"

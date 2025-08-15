@@ -16,7 +16,7 @@ export default async function CategoriesPage() {
 
     const { data, error } = await client
         .from("categories")
-        .select("id,name,slug,description,prompt_count,created_at,updated_at")
+        .select("id,name,slug,description,prompt_count,created_at,icon")
         .order("name", { ascending: true });
 
     if (error) {
@@ -83,7 +83,7 @@ export default async function CategoriesPage() {
                                         Prompts
                                     </th>
                                     <th className="text-left py-3 px-4 font-medium text-gray-900">
-                                        Updated
+                                        Icons
                                     </th>
                                     <th className="text-left py-3 px-4 font-medium text-gray-900">
                                         Actions
@@ -110,20 +110,23 @@ export default async function CategoriesPage() {
                                             {c.prompt_count ?? 0}
                                         </td>
                                         <td className="py-3 px-4 text-gray-600">
-                                            {c.updated_at
-                                                ? new Date(
-                                                      c.updated_at
-                                                  ).toLocaleDateString()
-                                                : "—"}
+                                            {c.icon ?? ""}
                                         </td>
                                         <td className="py-3 px-4">
                                             <div className="flex items-center gap-2">
-                                                {/* If you add an edit page later: */}
-                                                {/* <Link href={`/admin/categories/${c.id}/edit`}>
-                          <Button variant="outline" size="sm" className="bg-transparent">Edit</Button>
-                        </Link> */}
+                                                <Link
+                                                    href={`/admin/categories/${c.id}/edit`}
+                                                >
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="bg-transparent"
+                                                    >
+                                                        Edit
+                                                    </Button>
+                                                </Link>
 
-                                                <form
+                                                {/* <form
                                                     action={removeCategoryAction.bind(
                                                         null,
                                                         c.id
@@ -137,7 +140,7 @@ export default async function CategoriesPage() {
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
-                                                </form>
+                                                </form> */}
                                             </div>
                                         </td>
                                     </tr>

@@ -17,6 +17,7 @@ export async function createCategoryAction(formData: FormData) {
     const name = String(formData.get("name") || "").trim();
     const description =
         String(formData.get("description") || "").trim() || null;
+    const icon = String(formData.get("icon") || "").trim() || null;
 
     if (!name) throw new Error("Name is required");
 
@@ -25,7 +26,7 @@ export async function createCategoryAction(formData: FormData) {
         name,
         slug: slugify(name),
         description,
-        icon: null,
+        icon,
         prompt_count: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -53,3 +54,27 @@ export const getCategoriesAction = async () => {
     if (error) throw error;
     return data as Database["public"]["Tables"]["categories"]["Row"][];
 };
+
+export async function updateCategoryAction(formData: FormData) {
+    const { client } = await requireAdmin();
+
+    const id = String(formData.get("id") ?? "").trim();
+    const name = String(formData.get("name") ?? "").trim();
+    const icon = String(formData.get("icon") ?? "").trim();
+    const description =
+        formData.get("description") === null
+            ? null
+            : String(formData.get("description")).trim();
+
+    if (!id) throw new Error("Missing category id");
+    if (!name || !icon) throw new Error("Name and icon are required");
+
+    const { error } = await client
+        .from("categories")
+        .update({ name, icon, description })
+        .eq("id", id);
+
+    if (error) throw error;
+
+    redirect("/admin/categories");
+}
