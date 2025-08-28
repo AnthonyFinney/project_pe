@@ -8,14 +8,14 @@ import VariableInput from "@/components/VariableInput";
 import { Button } from "@/components/ui/button";
 import { Copy, Edit, Save, ImageIcon, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { prompts } from "@/constants";
 import Image from "next/image";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
 export default function PromptDetailPage() {
     const params = useParams();
     const promptId = params.id as string;
 
-    const [prompt, setPrompt] = useState<(typeof prompts)[0] | null>(null);
+    const [prompt, setPrompt] = useState<any | null>(null);
     const [variables, setVariables] = useState<Record<string, string>>({});
     const [processedContent, setProcessedContent] = useState("");
     const [isEditing, setIsEditing] = useState(false);
@@ -24,19 +24,49 @@ export default function PromptDetailPage() {
     const [showExample, setShowExample] = useState(false);
 
     useEffect(() => {
-        const foundPrompt = prompts.find((p) => p.id === promptId);
-        if (foundPrompt) {
-            setPrompt(foundPrompt);
-            setProcessedContent(foundPrompt.content);
-            setEditedContent(foundPrompt.content);
-
-            // Initialize variables
-            const initialVariables: Record<string, string> = {};
-            foundPrompt.variables?.forEach((variable) => {
-                initialVariables[variable.name] = "";
-            });
-            setVariables(initialVariables);
-        }
+        const run = async () => {
+            try {
+                const client = supabaseBrowser();
+                const { data, error } = await client
+                    .from("prompts_public")
+                    .select("*")
+                    .eq("id", promptId)
+                    .maybeSingle();
+                if (error) {
+                    console.warn("Failed to load prompt:", error);
+                    setPrompt(null);
+                    return;
+                }
+                if (data) {
+                    const mapped = {
+                        id: String(data.id),
+                        title: data.title ?? "Untitled",
+                        content: data.content ?? "",
+                        category: data.category_slug ?? "",
+                        categoryName: data.category_name ?? undefined,
+                        isLocked: false,
+                        thumbnail: data.thumbnail_url ?? null,
+                        description: undefined,
+                        useCases: data.use_cases ?? undefined,
+                        variables: data.variables ?? undefined,
+                        exampleValues: data.example_values ?? undefined,
+                        type: "text", // prompts_public does not expose type
+                    } as any;
+                    setPrompt(mapped);
+                    setProcessedContent(mapped.content);
+                    setEditedContent(mapped.content);
+                    const initialVariables: Record<string, string> = {};
+                    (mapped.variables ?? []).forEach((variable: any) => {
+                        if (variable?.name) initialVariables[variable.name] = "";
+                    });
+                    setVariables(initialVariables);
+                }
+            } catch (e) {
+                console.warn("Failed to load prompt (exception):", e);
+                setPrompt(null);
+            }
+        };
+        run();
     }, [promptId]);
 
     useEffect(() => {

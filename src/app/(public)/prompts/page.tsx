@@ -8,7 +8,7 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Lock, ArrowLeft, Search, X } from "lucide-react";
 import Link from "next/link";
-import { prompts } from "@/constants";
+import { supabaseBrowser } from "@/lib/supabase/client";
 
 // Category mapping for display names
 const categoryNames: Record<string, string> = {
@@ -22,41 +22,98 @@ const categoryNames: Record<string, string> = {
   "social-media": "Social Media",
 };
 
+type UIPrompt = {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  categoryName?: string;
+  isLocked?: boolean;
+  thumbnail?: string | null;
+  description?: string;
+  useCases?: string[];
+  variables?: any;
+  exampleValues?: any;
+};
+
 export default function PromptsPage() {
   const searchParams = useSearchParams();
   const selectedCategory = searchParams.get("category");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredPrompts, setFilteredPrompts] = useState<typeof prompts>([]);
+  const [allPrompts, setAllPrompts] = useState<UIPrompt[]>([]);
+  const [filteredPrompts, setFilteredPrompts] = useState<UIPrompt[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Filter prompts by category and search query
+  // Load prompts from DB when category changes (or on first load)
   useEffect(() => {
-    let result = selectedCategory
-      ? prompts.filter((prompt) => prompt.category === selectedCategory)
-      : prompts;
+    const run = async () => {
+      try {
+        const client = supabaseBrowser();
+        let query = client
+          .from("prompts_public")
+          .select("*")
+          .order("created_at", { ascending: false });
+        if (selectedCategory) {
+          const cat = String(selectedCategory);
+          // Match by slug (case-insensitive), id, or name (case-insensitive)
+          query = query.or(
+            `category_slug.eq.${cat},category_slug.ilike.${cat},category_id.eq.${cat},category_name.ilike.${cat}`
+          );
+        }
+        const { data, error } = await query;
+        if (error) {
+          setLoadError(error.message || "Failed to load prompts");
+          console.warn("Failed to load prompts:", error);
+          setAllPrompts([]);
+          return;
+        }
+        const items: UIPrompt[] = (data ?? [])
+          .filter((p: any) => !!p?.id)
+          .map((p: any) => ({
+            id: String(p.id),
+            title: p.title ?? "Untitled",
+            content: p.content ?? "",
+            category: p.category_slug ?? "",
+            categoryName: p.category_name ?? undefined,
+            isLocked: false, // prompts_public does not expose lock; treat as free here
+            thumbnail: p.thumbnail_url ?? null,
+            description: undefined,
+            useCases: p.use_cases ?? undefined,
+            variables: p.variables ?? undefined,
+            exampleValues: p.example_values ?? undefined,
+          }));
+        setLoadError(null);
+        setAllPrompts(items);
+      } catch (e: any) {
+        setLoadError(e?.message || "Failed to load prompts");
+        console.warn("Failed to load prompts (exception):", e);
+        setAllPrompts([]);
+      }
+    };
+    run();
+  }, [selectedCategory]);
 
+  // Filter prompts by search locally
+  useEffect(() => {
+    let result = allPrompts;
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (prompt) =>
-          prompt.title.toLowerCase().includes(query) ||
-          prompt.content.toLowerCase().includes(query) ||
-          (prompt.description &&
-            prompt.description.toLowerCase().includes(query)) ||
-          (prompt.useCases &&
-            prompt.useCases.some((useCase) =>
-              useCase.toLowerCase().includes(query)
-            ))
+      const q = searchQuery.toLowerCase();
+      result = result.filter((prompt) =>
+        prompt.title.toLowerCase().includes(q) ||
+        prompt.content.toLowerCase().includes(q) ||
+        (prompt.description && prompt.description.toLowerCase().includes(q)) ||
+        (prompt.useCases && prompt.useCases.some((u) => u.toLowerCase().includes(q)))
       );
     }
-
     setFilteredPrompts(result);
-  }, [selectedCategory, searchQuery]);
+  }, [allPrompts, searchQuery]);
 
   const freePrompts = filteredPrompts.filter((p) => !p.isLocked);
   const lockedPrompts = filteredPrompts.filter((p) => p.isLocked);
 
   const categoryDisplayName = selectedCategory
-    ? categoryNames[selectedCategory]
+    ? (filteredPrompts[0]?.categoryName || (categoryNames as any)[selectedCategory] || selectedCategory)
     : null;
 
   const clearSearch = () => {
@@ -67,6 +124,11 @@ export default function PromptsPage() {
     <div className="min-h-screen bg-white">
       <Navbar />
       <main className="container mx-auto px-4 py-8 mt-16">
+        {loadError && (
+          <div className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
+            {loadError}
+          </div>
+        )}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             {selectedCategory

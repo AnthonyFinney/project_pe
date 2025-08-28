@@ -1,41 +1,50 @@
-import { TrendingUp, TrendingDown, Users, FileText, DollarSign, Crown } from "lucide-react"
+import { TrendingUp, TrendingDown, Users, FileText, DollarSign, Crown } from "lucide-react";
+import { supabaseServer } from "@/lib/supabase/server";
 
-const stats = [
-  {
-    name: "Total Users",
-    value: "1,234",
-    change: "+12%",
-    changeType: "increase",
-    icon: Users,
-  },
-  {
-    name: "Total Prompts",
-    value: "456",
-    change: "+8%",
-    changeType: "increase",
-    icon: FileText,
-  },
-  {
-    name: "Monthly Revenue",
-    value: "$12,450",
-    change: "+23%",
-    changeType: "increase",
-    icon: DollarSign,
-  },
-  {
-    name: "Pro Subscribers",
-    value: "342",
-    change: "+15%",
-    changeType: "increase",
-    icon: Crown,
-  },
-]
+export default async function DashboardStats() {
+  const supabase = await supabaseServer();
 
-export default function DashboardStats() {
+  // Total users
+  const { count: usersCount } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true });
+
+  // Total published prompts (via table or view)
+  const { count: promptsCount } = await supabase
+    .from("prompts")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "published");
+
+  // Active subscriptions (pro subscribers)
+  const { count: proSubsCount } = await supabase
+    .from("subscriptions")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "active");
+
+  // Monthly revenue (sum current period start in this month)
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString();
+  const { data: revRows } = await supabase
+    .from("subscriptions")
+    .select("price_amount,current_period_start,status")
+    .gte("current_period_start", start)
+    .lt("current_period_start", end)
+    .eq("status", "active");
+  const monthlyCents = (revRows ?? []).reduce((sum, r: any) => sum + (r.price_amount ?? 0), 0);
+  const monthlyRevenue = `$${(monthlyCents / 100).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+
+  const stats = [
+    { name: "Total Users", value: (usersCount ?? 0).toLocaleString(), icon: Users },
+    { name: "Total Prompts", value: (promptsCount ?? 0).toLocaleString(), icon: FileText },
+    { name: "Monthly Revenue", value: monthlyRevenue, icon: DollarSign },
+    { name: "Pro Subscribers", value: (proSubsCount ?? 0).toLocaleString(), icon: Crown },
+  ];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {stats.map((stat) => {
-        const Icon = stat.icon
+        const Icon = stat.icon as any;
         return (
           <div key={stat.name} className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -47,22 +56,9 @@ export default function DashboardStats() {
                 <Icon className="w-6 h-6 text-blue-600" />
               </div>
             </div>
-            <div className="mt-4 flex items-center">
-              {stat.changeType === "increase" ? (
-                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              ) : (
-                <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
-              )}
-              <span
-                className={`text-sm font-medium ${stat.changeType === "increase" ? "text-green-600" : "text-red-600"}`}
-              >
-                {stat.change}
-              </span>
-              <span className="text-sm text-gray-500 ml-1">from last month</span>
-            </div>
           </div>
-        )
+        );
       })}
     </div>
-  )
+  );
 }
